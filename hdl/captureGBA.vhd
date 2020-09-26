@@ -67,72 +67,74 @@ begin
   vsyncRise <= '1' when ( vsync_int = '1' and vsync_del = '0' ) else '0';
   vsyncFall <= '1' when ( vsync_int = '0' and vsync_del = '1' ) else '0';
 
-  process( clk, rst ) is
+  process( clk ) is
   begin
-    if ( rst = '1' ) then
-      syncCnt <= 0;
-      vsync_int <= '1';
-      vsync_del <= '1';
-      cntY <= 0;
-      cntX <= 0;
-      dclk_prev <= '1';
-      curRedPxl <= ( others => '0' );
-      curGreenPxl <= ( others => '0' );
-      curBluePxl <= ( others => '0' );
-      redPxlOut <= ( others => '0' );
-      greenPxlOut <= ( others => '0' );
-      bluePxlOut <= ( others => '0' );
-      newPxl <= '0';
-      prevCntY <= 0;
-      prevCntX <= 0;
-      dclk_int <= '1';
-      
-    elsif ( rising_edge( clk ) ) then
-      -- Shift prev. dclk
-      dclk_int <= dclk;
-      dclk_prev <= dclk_int;
-      
-      vsync_int <= vsync;
-      vsync_del <= vsync_int;
-      
-      -- Shift newPxl.
-      -- The very first pixel seems to be not a valid one (...start bit?)
-      if ( prevCntX = 0 ) then
-        newPxl <= '0';
-      else
-        newPxl <= dclkRise;
-      end if;
-      
-      prevCntX <= cntX;
-      prevCntY <= cntY;
-      
-      -- Capture new pxl.
-      if ( dclkRise = '1' ) then
-        curRedPxl <= redPxl;
-        curGreenPxl <= greenPxl;
-        curBluePxl <= bluePxl;
-      end if;
-      
-      -- Extend prev. pxl.
-      redPxlOut <= curRedPxl & redExt;
-      greenPxlOut <= curGreenPxl & greenExt;
-      bluePxlOut <= curBluePxl & blueExt;
-      
-      if ( vsyncFall = '1' ) then
+    if ( rising_edge( clk ) ) then
+      if ( rst = '1' ) then
         syncCnt <= 0;
-      elsif ( vsync_int = '0' ) then
-        syncCnt <= syncCnt + 1;
-      end if;
-      
-      if ( vsyncRise = '1' and syncCnt >= minSyncCnt ) then
+        vsync_int <= '1';
+        vsync_del <= '1';
         cntY <= 0;
         cntX <= 0;
-      elsif ( dclkRise = '1' ) then
-        if ( cntX = 240 ) then
-          cntX <= 0;
-          cntY <= cntY + 1;
+        dclk_prev <= '1';
+        curRedPxl <= ( others => '0' );
+        curGreenPxl <= ( others => '0' );
+        curBluePxl <= ( others => '0' );
+        redPxlOut <= ( others => '0' );
+        greenPxlOut <= ( others => '0' );
+        bluePxlOut <= ( others => '0' );
+        newPxl <= '0';
+        prevCntY <= 0;
+        prevCntX <= 0;
+        dclk_int <= '1';
+      
+      else
+        -- Shift prev. dclk
+        dclk_int <= dclk;
+        dclk_prev <= dclk_int;
+        
+        vsync_int <= vsync;
+        vsync_del <= vsync_int;
+        
+        -- Shift newPxl.
+        -- The very first pixel seems to be not a valid one (...start bit?)
+        if ( prevCntX = 0 ) then
+          newPxl <= '0';
         else
-          cntX <= cntX + 1;
+          newPxl <= dclkRise;
+        end if;
+        
+        prevCntX <= cntX;
+        prevCntY <= cntY;
+        
+        -- Capture new pxl.
+        if ( dclkRise = '1' ) then
+          curRedPxl <= redPxl;
+          curGreenPxl <= greenPxl;
+          curBluePxl <= bluePxl;
+        end if;
+        
+        -- Extend prev. pxl.
+        redPxlOut <= curRedPxl & redExt;
+        greenPxlOut <= curGreenPxl & greenExt;
+        bluePxlOut <= curBluePxl & blueExt;
+        
+        if ( vsyncFall = '1' ) then
+          syncCnt <= 0;
+        elsif ( vsync_int = '0' ) then
+          syncCnt <= syncCnt + 1;
+        end if;
+        
+        if ( vsyncRise = '1' and syncCnt >= minSyncCnt ) then
+          cntY <= 0;
+          cntX <= 0;
+        elsif ( dclkRise = '1' ) then
+          if ( cntX = 240 ) then
+            cntX <= 0;
+            cntY <= cntY + 1;
+          else
+            cntX <= cntX + 1;
+          end if;
         end if;
       end if;
     end if;

@@ -1,7 +1,9 @@
-set_property IOSTANDARD LVCMOS33 [get_ports rst]
+#set_property IOSTANDARD LVCMOS33 [get_ports {key[0]}]
+#set_property IOSTANDARD LVCMOS33 [get_ports led]
 set_property IOSTANDARD LVCMOS33 [get_ports clk]
+#set_property PACKAGE_PIN J1 [get_ports led]
 set_property PACKAGE_PIN H4 [get_ports clk]
-set_property PACKAGE_PIN M4 [get_ports rst]
+#set_property PACKAGE_PIN C3 [get_ports {key[0]}]
 
 # FPGA IO0
 set_property PACKAGE_PIN N14 [get_ports vsync]
@@ -22,7 +24,7 @@ set_property PACKAGE_PIN B14 [get_ports {redPxl[0]}]
 # FPGA IO7
 set_property PACKAGE_PIN D3 [get_ports {redPxl[2]}]
 # FPGA IO8
-set_property PACKAGE_PIN P5 [get_ports {redPxl[4]}]
+set_property PACKAGE_PIN P5 [get_ports gbaclk]
 # FPGA IO9
 set_property PACKAGE_PIN E11 [get_ports dclk]
 
@@ -41,12 +43,15 @@ set_property PACKAGE_PIN A2 [get_ports {greenPxl[4]}]
 set_property PACKAGE_PIN B2 [get_ports {redPxl[1]}]
 # FPGA AR D11
 set_property PACKAGE_PIN B1 [get_ports {redPxl[3]}]
+# FPGA AR D13
+set_property PACKAGE_PIN H2 [get_ports {redPxl[4]}]
 
 set_property IOSTANDARD LVCMOS33 [get_ports redPxl]
 set_property IOSTANDARD LVCMOS33 [get_ports greenPxl]
 set_property IOSTANDARD LVCMOS33 [get_ports bluePxl]
 set_property IOSTANDARD LVCMOS33 [get_ports dclk]
 set_property IOSTANDARD LVCMOS33 [get_ports vsync]
+set_property IOSTANDARD LVCMOS33 [get_ports gbaclk]
 
 
 set_property -dict {PACKAGE_PIN F4 IOSTANDARD TMDS_33} [get_ports hdmiTxClkN]

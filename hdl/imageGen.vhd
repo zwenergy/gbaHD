@@ -1,19 +1,6 @@
 -----------------------------------------------------------------------
 -- Title: Image Generator
 -- Author: zwenergy
--- Notes:
--- This module generates the actual data for the video output. Currently
--- the implementation bends any video specification by A LOT. It does not
--- assume a "valid" pixel clock frequency, the number of horizontal
--- pixels are not according to specs and probably the worst: the number
--- of vertical lines is not event consistent. Right now, this is the 
--- "price" of not replacing the GBA's oscillator by a clock signal 
--- created by the FPGA and not saving whole frames, but going
--- line-by-line.
--- For future implementations, creating the GBA clock by the FPGA
--- itself should be considered to create more standard-confrom signal.
--- Right now, the back-porch area of the signal is not always consistent,
--- as this seemed to be the most accepted (..by my TV)
 -----------------------------------------------------------------------
 
 library IEEE;
@@ -71,69 +58,69 @@ signal newFrameInDel : std_logic;
 constant vfrontporch : integer := 3;
 constant vsyncpxl : integer := 5;
 constant vbackporch : integer := 20;
--- TODO: These values are depending on the actual pixel clock. Make
--- them depending on a given generic.
-constant maxHor : integer := 1410;
-constant maxVer : integer := 900;
+
+constant maxHor : integer := 1539;
+constant maxVer : integer := 911;
 
 begin
   
-  counterUpdate:process( pxlClk, rst ) is
+  counterUpdate:process( pxlClk ) is
   begin
-    if ( rst = '1' ) then
-        countX <= 0;
-        countY <= -25;
-        countXDel <= 0;
-        countYDel <= -25;
-        pxlCnt <= 0;
-        pxlCnt4 <= 0;
-        newFrameInDel <= '0';
-        newFrameProcessed <= '0';
-    elsif ( rising_edge( pxlClk ) ) then
-      countXDel <= countX;
-      countYDel <= countY;
-      newFrameInDel <= newFrameIn;
-      
-      if ( newFrameIn = '1' and newFrameInDel = '0' ) then
-        newFrameProcessed <= '0';
-      end if;
-      -- countX and countY
-      if ( countX = maxHor ) then
-        countX <= 0;
-        if ( countY = maxVer ) then
-          -- FIX!!
+    if ( rising_edge( pxlClk ) ) then
+      if ( rst = '1' ) then
+          countX <= 0;
           countY <= -25;
-        elsif ( newFrameIn = '1' and newFrameProcessed = '0' ) then
-          newFrameProcessed <= '1';
-          countY <= -25;
-        else
-          countY <= countY + 1;
-        
-        end if;
-      else
-        countX <= countX + 1;
-      end if;
-      
-      -- PxlCnt
-      if ( drawGBA = '0'  ) then
-        pxlCnt4 <= 0;
-        pxlCnt <= 0;
-      else
-        if ( pxlCnt4 = 3 ) then
+          countXDel <= 0;
+          countYDel <= -25;
+          pxlCnt <= 0;
           pxlCnt4 <= 0;
-          pxlCnt <= pxlCnt + 1;
-        else
-          pxlCnt4 <= pxlCnt4 + 1;
+          newFrameInDel <= '0';
+          newFrameProcessed <= '0';
+      else
+        countXDel <= countX;
+        countYDel <= countY;
+        newFrameInDel <= newFrameIn;
+        
+        if ( newFrameIn = '1' and newFrameInDel = '0' ) then
+          newFrameProcessed <= '0';
         end if;
-      end if;
-      
-      if ( countX = maxHor - 1 ) then
-        if ( countY = maxVer or countY < 0 or ( newFrameIn = '1' and newFrameProcessed = '0' ) ) then
-          lineCnt4 <= 0;
-        elsif ( lineCnt4 = 3 ) then
-          lineCnt4 <= 0;
+        -- countX and countY
+        if ( countX = maxHor ) then
+          countX <= 0;
+          if ( countY = maxVer ) then
+            countY <= -25;
+          elsif ( newFrameIn = '1' and newFrameProcessed = '0' ) then
+            newFrameProcessed <= '1';
+            countY <= -25;
+          else
+            countY <= countY + 1;
+          
+          end if;
         else
-          lineCnt4 <= lineCnt4 + 1;
+          countX <= countX + 1;
+        end if;
+        
+        -- PxlCnt
+        if ( drawGBA = '0'  ) then
+          pxlCnt4 <= 0;
+          pxlCnt <= 0;
+        else
+          if ( pxlCnt4 = 3 ) then
+            pxlCnt4 <= 0;
+            pxlCnt <= pxlCnt + 1;
+          else
+            pxlCnt4 <= pxlCnt4 + 1;
+          end if;
+        end if;
+        
+        if ( countX = maxHor - 1 ) then
+          if ( countY = maxVer or countY < 0 or ( newFrameIn = '1' and newFrameProcessed = '0' ) ) then
+            lineCnt4 <= 0;
+          elsif ( lineCnt4 = 3 ) then
+            lineCnt4 <= 0;
+          else
+            lineCnt4 <= lineCnt4 + 1;
+          end if;
         end if;
       end if;
     end if;
@@ -148,7 +135,6 @@ begin
               '0';
   drawGBA <= '1' when ( countXDel < 959 and ( countYDel >= 0 and countYDel < 639 ) ) else '0';
   
-  --hSync <= '1' when ( countXDel >= 1344 ) and ( countXDel < 1472 ) else '0';
   hSync <= '1' when ( countXDel >= 1344 ) and ( countXDel < 1380 ) else '0';
   vSync <= '1' when ( countYDel < -vbackporch) else '0';
   draw <= '1' when ( countXDel < 1280 ) and ( countYDel >= 0 and countYDel < 720 ) else '0';
@@ -160,16 +146,18 @@ begin
   blueDat <= bluePxl when ( drawGBA ='1' ) else ( others => '0' );  
   
   --Capture the next pixel.
-  getPixel:process( pxlClk, rst ) is
+  getPixel:process( pxlClk ) is
   begin
-    if ( rst = '1' ) then
-      redPxl <= ( others => '0' );
-      greenPxl <= ( others => '0' );
-      bluePxl <= ( others => '0' );
-    elsif ( rising_edge( pxlClk ) ) then
-      redPxl <= redPxlIn;
-      greenPxl <= greenPxlIn;
-      bluePxl <= bluePxlIn;
+    if ( rising_edge( pxlClk ) ) then
+      if ( rst = '1' ) then
+        redPxl <= ( others => '0' );
+        greenPxl <= ( others => '0' );
+        bluePxl <= ( others => '0' );
+      else
+        redPxl <= redPxlIn;
+        greenPxl <= greenPxlIn;
+        bluePxl <= bluePxlIn;
+      end if;
     end if;
   end process;
     

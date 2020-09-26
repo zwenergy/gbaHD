@@ -64,33 +64,37 @@ begin
   greenOut <= greenOut_int( outCnt );
   blueOut <= blueOut_int( outCnt );
 
-  process( clkW, rst ) is
+  process( clkW ) is
   begin
-    if ( rst = '1' ) then
-      inCnt <= 0;
-      newFrames <= ( others => '0' );
-    elsif ( rising_edge( clkW ) ) then
-      if ( pushLine = '1' ) then
-      newFrames( inCnt ) <= newFrameIn;
-        if ( inCnt  = nrStgs - 1 ) then
-          inCnt <= 0;
-        else
-          inCnt <= inCnt + 1;
-         end if;
+    if ( rising_edge( clkW ) ) then
+      if ( rst = '1' ) then
+        inCnt <= 0;
+        newFrames <= ( others => '0' );
+      else
+        if ( pushLine = '1' ) then
+        newFrames( inCnt ) <= newFrameIn;
+          if ( inCnt  = nrStgs - 1 ) then
+            inCnt <= 0;
+          else
+            inCnt <= inCnt + 1;
+           end if;
+        end if;
       end if;
     end if;
   end process;
   
-  process( clkR, rst ) is
+  process( clkR ) is
   begin
-    if ( rst = '1' ) then
-        outCnt <= 0;
-    elsif ( rising_edge( clkR ) ) then
-      if ( pullLine = '1' ) then
-        if ( outCnt = nrStgs - 1 ) then
+    if ( rising_edge( clkR ) ) then
+      if ( rst = '1' ) then
           outCnt <= 0;
-        else
-          outCnt <= outCnt + 1;
+      else
+        if ( pullLine = '1' ) then
+          if ( outCnt = nrStgs - 1 ) then
+            outCnt <= 0;
+          else
+            outCnt <= outCnt + 1;
+          end if;
         end if;
       end if;
     end if;

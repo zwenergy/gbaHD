@@ -12,7 +12,7 @@ use UNISIM.vcomponents.all;
 entity topUnit4x is
   port(
     clk : in std_logic; -- 100 MHz
-    rst : in std_logic;
+--    rst : in std_logic;
     hdmiTxHPD : in std_logic;
     
     redPxl : in std_logic_vector( 4 downto 0 );
@@ -20,6 +20,8 @@ entity topUnit4x is
     bluePxl : in std_logic_vector( 4 downto 0 );
     vsync : in std_logic;
     dclk : in std_logic;
+    
+    gbaclk : out std_logic;
     
     hdmiTxCEC : inout std_logic;
     hdmiTxRSCL : inout std_logic;
@@ -43,8 +45,6 @@ signal pxlClk5x : std_logic;
 signal clkLock : std_logic;
 signal clkFB : std_logic;
 
-signal rstH : std_logic;
-
 signal redPxlCap, greenPxlCap, bluePxlCap : std_logic_vector( 7 downto 0 );
 signal validPxlCap : std_logic;
 signal pxlCntCap : std_logic_vector( 7 downto 0 );
@@ -67,42 +67,65 @@ signal greenSHIFT2 : std_logic;
 signal blueSHIFT1 : std_logic;
 signal blueSHIFT2 : std_logic;
 
+signal gbaclk_int : std_logic;
+signal gbaclk2x : std_logic;
+
+-- Main reset.
+signal rst : std_logic := '1';
+
 -- Out.
 signal redSer, greenSer, blueSer : std_logic;
 begin
 
-  rstH <= not rst;
+  rst <= not clkLock;
+  gbaclk <= gbaclk_int;
   
   hdmiTxCEC <= 'Z';
   hdmiTxRSCL <= 'Z';
   hdmiTxRSDA <= 'Z';
-
-  -- Generate a pixelclock of 75 MHz.
-  PLL_inst:PLLE2_BASE
+  
+  -- Generate Clks.
+  mmcm_inst : MMCME2_BASE
     generic map(
-      CLKFBOUT_MULT => 11,
-      CLKOUT0_DIVIDE => 15, -- pxlClk
-      CLKOUT1_DIVIDE => 3 -- pxlClk5x
+      CLKOUT0_DIVIDE_F => 1.0,
+      CLKOUT1_DIVIDE => 10,
+      CLKOUT2_DIVIDE => 2,
+      CLKOUT3_DIVIDE => 100,
+      CLKFBOUT_MULT_F => 8.375,
+      DIVCLK_DIVIDE => 1,
+      CLKIN1_PERIOD => 10.0
     )
     port map(
       CLKIN1 => clk,
+      RST => '0',
       CLKFBIN => clkFB,
-      RST => rstH,
-      CLKOUT0 => pxlClk,
-      CLKOUT1 => pxlClk5x,
+      CLKOUT0 => open,
+      CLKOUT1 => pxlClk,
+      CLKOUT2 => pxlClk5x,
+      CLKOUT3 => gbaClk2x,
       CLKFBOUT => clkFB,
       LOCKED => clkLock,
       PWRDWN => '0'
     );
     
+    -- Generate the actual GBA clk.
+    process( gbaclk2x, rst ) is
+    begin
+      if ( rst = '1' ) then
+        gbaclk_int <= '1';
+      elsif rising_edge( gbaclk2x ) then
+        gbaclk_int <= not gbaclk_int;
+      end if;
+    end process;
+    
   -- The capture interface.
   cap_inst : entity work.captureGBA( rtl )
     generic map(
-      clkPeriodNS => 13.0
+      clkPeriodNS => 12.0
     )
     port map(
       clk => pxlClk,
-      rst => rstH,
+      rst => rst,
       redPxl => redPxl,
       bluePxl => bluePxl,
       greenPxl => greenPxl,
@@ -125,7 +148,7 @@ begin
     port map(
       clkW => pxlClk,
       clkR => pxlClk,
-      rst => rstH,
+      rst => rst,
       redIn => redPxlCap,
       greenIn => greenPxlCap,
       blueIn => bluePxlCap,
@@ -147,7 +170,7 @@ begin
   imgGen_inst : entity work.imageGen( rtl )
     port map(
       pxlClk => pxlClk,
-      rst => rstH,
+      rst => rst,
       redPxlIn => redBuf,
       greenPxlIn => greenBuf,
       bluePxlIn => blueBuf,
@@ -190,7 +213,7 @@ begin
         OCE => '1',
         TBYTEIN => '0',
         TBYTEOUT => open,
-        RST => rstH,
+        RST => rst,
         SHIFTIN1 => redSHIFT1,
         SHIFTIN2 => redSHIFT2,
         T1 => '0',
@@ -228,7 +251,7 @@ begin
       OCE => '1',
       TBYTEIN => '0',
       TBYTEOUT => open,
-      RST => rstH,
+      RST => rst,
       SHIFTIN1 => '0',
       SHIFTIN2 => '0',
       T1 => '0',
@@ -266,7 +289,7 @@ begin
         OCE => '1',
         TBYTEIN => '0',
         TBYTEOUT => open,
-        RST => rstH,
+        RST => rst,
         SHIFTIN1 => greenSHIFT1,
         SHIFTIN2 => greenSHIFT2,
         T1 => '0',
@@ -304,7 +327,7 @@ begin
       OCE => '1',
       TBYTEIN => '0',
       TBYTEOUT => open,
-      RST => rstH,
+      RST => rst,
       SHIFTIN1 => '0',
       SHIFTIN2 => '0',
       T1 => '0',
@@ -343,7 +366,7 @@ begin
         OCE => '1',
         TBYTEIN => '0',
         TBYTEOUT => open,
-        RST => rstH,
+        RST => rst,
         SHIFTIN1 => blueSHIFT1,
         SHIFTIN2 => blueSHIFT2,
         T1 => '0',
@@ -381,7 +404,7 @@ begin
       OCE => '1',
       TBYTEIN => '0',
       TBYTEOUT => open,
-      RST => rstH,
+      RST => rst,
       SHIFTIN1 => '0',
       SHIFTIN2 => '0',
       T1 => '0',
