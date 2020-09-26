@@ -1,17 +1,16 @@
 # gbaHD
 A GBA to DVI converter.
 
+To create a stable HDMI signal without buffering whole frames, but rather
+go line-by-line, the quartz crystal of the GBA is removed. Instead, 
+the FPGA generates the clock signal for the GBA.
+
 *README TODO:*
 - Describe the overall project.
 - Describe the different modules.
 - Describe pinouts.
 - Describe GBA video timing.
 
-*HDL TODO:*
-- Fix resets to sync. resets everywhere.
-- Replace hard-coded constants with generics.
-
 *General TODO:*
 - Controller input.
 - Audio.
-- An alternative design with an FPGA-driven GBA clock signal to create a proper HDMI signal.
