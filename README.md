@@ -12,5 +12,4 @@ the FPGA generates the clock signal for the GBA.
 - Describe GBA video timing.
 
 *General TODO:*
-- Controller input.
 - Audio.
