@@ -232,7 +232,6 @@ begin
 
           guard1 <= "0100110011";
           guard2 <= "0100110011";
-          --dat0 <= "11" & vsync & hsync;
           
           curEncType <= NOENC;
           
@@ -242,7 +241,6 @@ begin
             packetClkCnt <= packetClkCnt + 1;
           end if;   
 
-        --elsif( countY = 2 and countXDel = dataXPosStart + 3 and packetClkCnt < 28 ) then
         elsif( countY = 2 and countX >= dataXPosStart + 2 and packetClkCnt < 28 ) then
           -- Send the packets.
           packetClkCnt <= packetClkCnt + 1;
@@ -355,7 +353,6 @@ begin
           
           curEncType <= TERCENC;
         elsif ( ( countY >= -1 and countY <= 718 ) and countX >= videoPreambleXPosStart and countX < videoGuardXPosStart ) then
-        --if ( ( countY >= -1 and countY <= 718 ) and countX >= videoPreambleXPosStart and countX < videoGuardXPosStart ) then
           -- Send video preamble.
           ctl0 <= '1';
           ctl1 <= '0';
@@ -368,7 +365,6 @@ begin
           
           curEncType <= TMDSENC;
           
-        --elsif( countY = 2 and countX >= videoGuardXPosStart  ) then
         elsif( ( countY >= -1 and countY <= 718 ) and countX >= videoGuardXPosStart  ) then
           -- Send the video guard band.
           ctl0 <= '0';
@@ -425,12 +421,8 @@ begin
               '0' when ( countY < 0 ) else
               '1' when ( lineCnt4 = 3 ) else
               '0';
-  --drawGBA <= '1' when ( countXDel < 959 and ( countYDel >= 0 and countYDel < 639 ) ) else '0';
   drawGBA <= '1' when ( countX < 959 and ( countY >= 0 and countY < 639 ) ) else '0';
   
---  hSync <= '1' when ( countXDel >= 1280 + hfrontporch ) and ( countXDel < 1280 + hfrontporch + hsyncpxl ) else '0';
---  vSync <= '1' when ( countYDel < -vbackporch) else '0';
---  draw <= '1' when ( countXDel < 1280 ) and ( countYDel >= 0 and countYDel < 720 ) else '0';
   hSync <= '1' when ( countXDel >= 1280 + hfrontporch ) and ( countXDel < 1280 + hfrontporch + hsyncpxl ) else '0';
   vSync <= '1' when ( countYDel < -vbackporch) else '0';
   draw <= '1' when ( countXDel < 1280 ) and ( countYDel >= 0 and countYDel < 720 ) else '0';
