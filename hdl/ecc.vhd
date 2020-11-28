@@ -8,7 +8,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity ecc is 
   port (
-    datIn : in std_logic;
+    datIn : in std_logic_vector( 7 downto 0 );
     newPacket : in std_logic;
     enable : in std_logic;
     clk : in std_logic;
@@ -23,6 +23,8 @@ signal lfsr : std_logic_vector( 7 downto 0 );
 begin
 
   process( clk ) is
+  variable shiftreg : std_logic_vector( 7 downto 0 );
+  variable tmpBit : std_logic;
   begin
     if rising_edge( clk ) then
       if ( rst = '1' ) then
@@ -30,16 +32,20 @@ begin
       else
         if ( enable = '1' ) then
           if ( newPacket = '1' ) then
-            lfsr( 7 ) <= datIn;
-            lfsr( 6 downto 2 ) <= "00000";
-            lfsr( 1 ) <= datIn;
-            lfsr( 0 ) <= datIn;
+            shiftreg := ( others => '0' );
           else 
-            lfsr( 7 ) <= datIn xor lfsr( 0 );
-            lfsr( 6 downto 2 ) <= lfsr( 7 downto 3 );
-            lfsr( 1 ) <= lfsr( 2 ) xor ( datIn xor lfsr( 0 ) );
-            lfsr( 0 ) <= lfsr( 1 ) xor ( datIn xor lfsr( 0 ) );
+            shiftreg := lfsr;
           end if;
+          
+          for I in 7 downto 0 loop
+            tmpBit := shiftreg( 0 ) xor datIn( I );
+            shiftreg := tmpBit & shiftreg( 7 downto 1 );
+            if ( tmpBit = '1' ) then
+              shiftreg := shiftreg xor "00000011";
+            end if;
+          end loop;
+          
+          lfsr <= shiftreg;
         end if;
       end if;    
     end if;

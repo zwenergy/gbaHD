@@ -50,6 +50,7 @@ begin
       when "1101" => datOut <= "1001110001";
       when "1110" => datOut <= "0101100011";
       when "1111" => datOut <= "1011000011";
+      when others => datOut <= ( others => '0' );
     end case;
   end process;
 

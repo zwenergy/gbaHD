@@ -26,6 +26,8 @@ signal disparity : integer range -16 to 15;
 signal disparity_prev : integer range -16 to 15;
 signal datIn_int : std_logic_vector( 7 downto 0 );
 signal datOut_tmp : std_logic_vector( 9 downto 0 );
+signal ctrl_int : std_logic_vector( 1 downto 0 );
+signal dispEN_int : std_logic;
 begin
 
   -- This one has a sync. reset.
@@ -35,9 +37,13 @@ begin
       if ( rst = '1' ) then
         datIn_int <= ( others => '0' );
         disparity_prev <= 0;
+        ctrl_int <= "00";
+        dispEN_int <= '0';
       else
         datIn_int <= datIn;
         disparity_prev <= disparity;
+        ctrl_int <= ctrl;
+        dispEN_int <= dispEN;
       end if;
     end if;
   end process;
@@ -87,11 +93,11 @@ begin
   end process;
   
   outProc:process( datOut_tmp, sumTmp, diffTmp, disparity_prev,
-                   dispEN, ctrl ) is
+                   dispEN_int, ctrl_int ) is
   begin
-    if ( dispEN = '0' ) then
+    if ( dispEN_int = '0' ) then
       disparity <= 0;
-      case ctrl is
+      case ctrl_int is
         when "00" =>
           datOut <= "1101010100";
         when "01" =>
