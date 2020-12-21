@@ -1,7 +1,6 @@
 -----------------------------------------------------------------------
 -- Title: Top Unit 4x
 -- Author: zwenergy
--- TODO: Replace clock-related constants with generics.
 -----------------------------------------------------------------------
 
 library IEEE;
@@ -12,7 +11,6 @@ use UNISIM.vcomponents.all;
 entity topUnit4x is
   port(
     clk : in std_logic; -- 100 MHz
---    rst : in std_logic;
     hdmiTxHPD : in std_logic;
     
     redPxl : in std_logic_vector( 4 downto 0 );
@@ -20,6 +18,9 @@ entity topUnit4x is
     bluePxl : in std_logic_vector( 4 downto 0 );
     vsync : in std_logic;
     dclk : in std_logic;
+    
+    audioLIn : in std_logic;
+    audioRIn : std_logic;
     
     gbaclk : out std_logic;
     
@@ -176,6 +177,8 @@ begin
       bluePxlIn => blueBuf,
       sameLine => writeReadSameLine,
       newFrameIn => newFrameBuff,
+      audioLIn => audioLIn,
+      audioRIn => audioRIn,
       nextLine => nextLineRead,
       curPxl => pxlCntRead,
       redEnc => redEnc,

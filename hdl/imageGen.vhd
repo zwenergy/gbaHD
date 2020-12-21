@@ -6,6 +6,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all;
+use IEEE.std_logic_misc.all;
 
 entity imageGen is 
   port(
@@ -16,13 +17,15 @@ entity imageGen is
     bluePxlIn : in std_logic_vector( 7 downto 0 );
     sameLine : in std_logic;
     newFrameIn : in std_logic;
+    audioLIn : in std_logic;
+    audioRIn : in std_logic;
     
     nextLine : out std_logic;
     curPxl : out std_logic_vector( 7 downto 0 );
     
     redEnc : out std_logic_vector( 9 downto 0 );
     greenEnc : out std_logic_vector( 9 downto 0 );
-    blueEnc : out std_logic_vector( 9 downto 0 )    
+    blueEnc : out std_logic_vector( 9 downto 0 )
   );
 end imageGen;
 
@@ -63,7 +66,7 @@ signal newFrameProcessed : std_logic;
 signal newFrameInDel : std_logic;
 
 -- ECC control.
-signal eccNewPacket, eccEnable : std_logic;
+signal eccNewPacket, eccEnable, eccHeaderEnable : std_logic;
 
 -- Data related signals
 type tSubpacket is array( 0 to 6 ) of std_logic_vector( 7 downto 0);
@@ -73,6 +76,7 @@ signal guard0, guard1, guard2 : std_logic_vector( 9 downto 0 );
 signal dat0, dat1, dat2 : std_logic_vector( 3 downto 0 );
 signal subpacket0, subpacket1, subpacket2, subpacket3 : tSubpacket;
 signal packetheader : tPacketheader;
+signal subpacket0Del, subpacket1Del, subpacket2Del, subpacket3Del, packetheaderDel : std_logic_vector( 7 downto 0 );
 signal packetClkCnt : integer range 0 to 50;
 signal newPacketByte : std_logic;
 signal ecc0, ecc1, ecc2, ecc3, ecc4,
@@ -86,7 +90,7 @@ constant hfrontporch : integer := 64;
 constant hsyncpxl : integer := 36;
 
 constant maxHor : integer := 1539;
-constant maxVer : integer := 911;
+constant maxVer : integer := 911; 
 
 -- Encoding-Type
 type tStatus is ( TMDSENC, TERCENC, NOENC );
@@ -98,7 +102,38 @@ constant dataXPosStart : integer := dataPreAmbleXPosStart + 8;
 constant videoPreambleXPosStart : integer := maxHor - 9;--1530
 constant videoGuardXPosStart : integer := videoPreambleXPosStart + 8;--1538
 
+constant audioRegenHeader : tPacketheader := ( 0 => "00000001", 1 => "00000000", 2 => "00000000" );
+constant audioRegenN : std_logic_vector( 19 downto 0 ) := std_logic_vector( to_unsigned( 6144, 20 ) );
+signal audioRegenCTS : std_logic_vector( 19 downto 0 ) := std_logic_vector( to_unsigned( 79872, 20 ) );
+signal ctsPacketSendCnt : unsigned( audioRegenN'length - 1 downto 0 );
+signal sendCTS, sendCTSdone : std_logic;
+
+signal dataPacketSending : std_logic;
+
+-- Audio signals.
+signal audioLOut : std_logic_vector( 15 downto 0 );
+signal audioROut : std_logic_vector( 15 downto 0 );
+signal audioValidOut : std_logic;
+signal lastAudioLSample0, lastAudioRSample0 : std_logic_vector( 23 downto 0 );
+signal lastAudioLSample1, lastAudioRSample1 : std_logic_vector( 23 downto 0 );
+signal lastAudioLSample2, lastAudioRSample2 : std_logic_vector( 23 downto 0 );
+signal lastAudioLSample3, lastAudioRSample3 : std_logic_vector( 23 downto 0 );
+signal audioSamplesPresent : std_logic_vector( 3 downto 0 );
+signal newAudio : std_logic;
+signal sendingAudio : std_logic;
+signal lastAudioProcessed : std_logic;
+signal audioSampleCnt, audioSampleCnt1, audioSampleCnt2, audioSampleCnt3, audioSampleCnt4 : integer range 0 to 191;
+signal prevADClk : std_logic;
+signal sample128Clk : std_logic;
+
+constant audioSampleFreq : real := 48.0;
+constant clkFreq : real := 83745.07997655;
+signal statusBits : std_logic_vector( 191 downto 0 );
+
 begin
+
+  statusBits( 39 downto 0 ) <= x"D202004004";
+  statusBits( 191 downto 40 ) <= ( others => '0' );
   
   counterUpdate:process( pxlClk ) is
   begin
@@ -187,19 +222,159 @@ begin
         ecc2 <= ( others => '0' );
         ecc3 <= ( others => '0' );
         ecc4 <= ( others => '0' );
+        dataPacketSending <= '0';
+        lastAudioProcessed <= '0';
+        eccHeaderEnable <= '0';
+        eccEnable <= '0';
+        audioSampleCnt <= 0;
+        sendCTSdone <= '0';
       else
-        if ( countY = 2 and countX = dataPreambleXPosStart - 1 ) then
+        -- Send the audio reconstruction paket at the 2nd active line.
+        if ( sendCTS = '1' and countX = dataPreambleXPosStart - 1 ) then
           -- Set the packets and header.
-          subpacket0 <= ( others => ( others => '0' ) );
-          subpacket1 <= ( others => ( others => '0' ) );
-          subpacket2 <= ( others => ( others => '0' ) );
-          subpacket3 <= ( others => ( others => '0' ) );
-          packetheader <= ( others => ( others => '0' ) );
+          subpacket0( 0 ) <= "00000000";
+          subpacket0( 1 ) <= "0000" & audioRegenCTS( 19 downto 16 );
+          subpacket0( 2 ) <= audioRegenCTS( 15 downto 8 );
+          subpacket0( 3 ) <= audioRegenCTS( 7 downto 0 );
+          subpacket0( 4 ) <= "0000" & audioRegenN( 19 downto 16 );
+          subpacket0( 5 ) <= audioRegenN( 15 downto 8 );
+          subpacket0( 6 ) <= audioRegenN( 7 downto 0 );
+          
+          subpacket1( 0 ) <= "00000000";
+          subpacket1( 1 ) <= "0000" & audioRegenCTS( 19 downto 16 );
+          subpacket1( 2 ) <= audioRegenCTS( 15 downto 8 );
+          subpacket1( 3 ) <= audioRegenCTS( 7 downto 0 );
+          subpacket1( 4 ) <= "0000" & audioRegenN( 19 downto 16 );
+          subpacket1( 5 ) <= audioRegenN( 15 downto 8 );
+          subpacket1( 6 ) <= audioRegenN( 7 downto 0 );
+          
+          subpacket2( 0 ) <= "00000000";
+          subpacket2( 1 ) <= "0000" & audioRegenCTS( 19 downto 16 );
+          subpacket2( 2 ) <= audioRegenCTS( 15 downto 8 );
+          subpacket2( 3 ) <= audioRegenCTS( 7 downto 0 );
+          subpacket2( 4 ) <= "0000" & audioRegenN( 19 downto 16 );
+          subpacket2( 5 ) <= audioRegenN( 15 downto 8 );
+          subpacket2( 6 ) <= audioRegenN( 7 downto 0 );
+          
+          subpacket3( 0 ) <= "00000000";
+          subpacket3( 1 ) <= "0000" & audioRegenCTS( 19 downto 16 );
+          subpacket3( 2 ) <= audioRegenCTS( 15 downto 8 );
+          subpacket3( 3 ) <= audioRegenCTS( 7 downto 0 );
+          subpacket3( 4 ) <= "0000" & audioRegenN( 19 downto 16 );
+          subpacket3( 5 ) <= audioRegenN( 15 downto 8 );
+          subpacket3( 6 ) <= audioRegenN( 7 downto 0 );
+
+          packetheader <= audioRegenHeader;
           
           curEncType <= TMDSENC;
+          dataPacketSending <= '1';
+          lastAudioProcessed <= '0';
+          sendCTSdone <= '1';
           
-        -- Send the audio reconstruction paket at the 2nd active line.
-        elsif ( countY = 2 and countX >= dataPreambleXPosStart and countX < dataXPosStart ) then
+        -- Send an audio packet.
+        elsif ( countX = dataPreambleXPosStart - 1 and newAudio = '1' ) then
+          -- Set the packets and header.
+          subpacket0( 0 ) <= lastAudioLSample0( 7 downto 0 );
+          subpacket0( 1 ) <= lastAudioLSample0( 15 downto 8 );
+          subpacket0( 2 ) <= lastAudioLSample0( 23 downto 16 );
+          subpacket0( 3 ) <= lastAudioRSample0( 7 downto 0 );
+          subpacket0( 4 ) <= lastAudioRSample0( 15 downto 8 );
+          subpacket0( 5 ) <= lastAudioRSample0( 23 downto 16 );
+          subpacket0( 6 )( 7 ) <= xor_reduce( lastAudioRSample0 ) xor '1' xor statusBits( audioSampleCnt );
+          subpacket0( 6 )( 6 downto 4 ) <= statusBits( audioSampleCnt ) & "01";
+          subpacket0( 6 )( 3 ) <= xor_reduce( lastAudioLSample0 ) xor '1' xor statusBits( audioSampleCnt );
+          subpacket0( 6 )( 2 downto 0 ) <= statusBits( audioSampleCnt ) & "01";
+          
+          if ( audioSamplesPresent( 1 ) = '1' ) then
+            subpacket1( 0 ) <= lastAudioLSample1( 7 downto 0 );
+            subpacket1( 1 ) <= lastAudioLSample1( 15 downto 8 );
+            subpacket1( 2 ) <= lastAudioLSample1( 23 downto 16 );
+            subpacket1( 3 ) <= lastAudioRSample1( 7 downto 0 );
+            subpacket1( 4 ) <= lastAudioRSample1( 15 downto 8 );
+            subpacket1( 5 ) <= lastAudioRSample1( 23 downto 16 );
+            subpacket1( 6 )( 7 ) <= xor_reduce( lastAudioRSample1 ) xor '1' xor statusBits( audioSampleCnt1 );
+            subpacket1( 6 )( 6 downto 4 ) <= statusBits( audioSampleCnt1 ) & "01";
+            subpacket1( 6 )( 3 ) <= xor_reduce( lastAudioLSample1 ) xor '1' xor statusBits( audioSampleCnt1 );
+            subpacket1( 6 )( 2 downto 0 ) <= statusBits( audioSampleCnt1 ) & "01";
+          else
+            subpacket1 <= ( others => ( others => '0' ) );
+          end if;
+          
+          if ( audioSamplesPresent( 2 ) = '1' ) then
+            subpacket2( 0 ) <= lastAudioLSample2( 7 downto 0 );
+            subpacket2( 1 ) <= lastAudioLSample2( 15 downto 8 );
+            subpacket2( 2 ) <= lastAudioLSample2( 23 downto 16 );
+            subpacket2( 3 ) <= lastAudioRSample2( 7 downto 0 );
+            subpacket2( 4 ) <= lastAudioRSample2( 15 downto 8 );
+            subpacket2( 5 ) <= lastAudioRSample2( 23 downto 16 );
+            subpacket2( 6 )( 7 ) <= xor_reduce( lastAudioRSample2 ) xor '1' xor statusBits( audioSampleCnt2 );
+            subpacket2( 6 )( 6 downto 4 ) <= statusBits( audioSampleCnt2 ) & "01";
+            subpacket2( 6 )( 3 ) <= xor_reduce( lastAudioLSample2 ) xor '1' xor statusBits( audioSampleCnt2 );
+            subpacket2( 6 )( 2 downto 0 ) <= statusBits( audioSampleCnt2 ) & "01";
+          else
+            subpacket2 <= ( others => ( others => '0' ) );
+          end if;
+          
+          if ( audioSamplesPresent( 3 ) = '1' ) then
+            subpacket3( 0 ) <= lastAudioLSample3( 7 downto 0 );
+            subpacket3( 1 ) <= lastAudioLSample3( 15 downto 8 );
+            subpacket3( 2 ) <= lastAudioLSample3( 23 downto 16 );
+            subpacket3( 3 ) <= lastAudioRSample3( 7 downto 0 );
+            subpacket3( 4 ) <= lastAudioRSample3( 15 downto 8 );
+            subpacket3( 5 ) <= lastAudioRSample3( 23 downto 16 );
+            subpacket3( 6 )( 7 ) <= xor_reduce( lastAudioRSample3 ) xor '1' xor statusBits( audioSampleCnt3 );
+            subpacket3( 6 )( 6 downto 4 ) <= statusBits( audioSampleCnt3 ) & "01";
+            subpacket3( 6 )( 3 ) <= xor_reduce( lastAudioLSample3 ) xor '1' xor statusBits( audioSampleCnt3 );
+            subpacket3( 6 )( 2 downto 0 ) <= statusBits( audioSampleCnt3 ) & "01";
+          else
+            subpacket3 <= ( others => ( others => '0' ) );
+          end if;
+          
+
+          packetheader( 0 ) <= "00000010";
+          packetheader( 1 ) <= "0000" & audioSamplesPresent;
+          
+          if ( audioSampleCnt = 0 ) then
+            packetheader( 2 )( 4 ) <= '1';
+          else
+            packetheader( 2 )( 4 ) <= '0';
+          end if;
+          
+          if ( audioSampleCnt1 = 0 ) then
+            packetheader( 2 )( 5 ) <= '1';
+          else
+            packetheader( 2 )( 5 ) <= '0';
+          end if;
+          
+          if ( audioSampleCnt2 = 0 ) then
+            packetheader( 2 )( 6 ) <= '1';
+          else
+            packetheader( 2 )( 6 ) <= '0';
+          end if;
+          
+          if ( audioSampleCnt3 = 0 ) then
+            packetheader( 2 )( 7 ) <= '1';
+          else
+            packetheader( 2 )( 7 ) <= '0';
+          end if;
+          
+          packetheader( 2 )( 3 downto 0 ) <= "0000";
+
+          curEncType <= TMDSENC;
+          dataPacketSending <= '1';
+          lastAudioProcessed <= '1';
+          sendCTSdone <= '0';
+          
+          case audioSamplesPresent is 
+            when "0001" => audioSampleCnt <= audioSampleCnt1;
+            when "0011" => audioSampleCnt <= audioSampleCnt2;
+            when "0111" => audioSampleCnt <= audioSampleCnt3;
+            when "1111" => audioSampleCnt <= audioSampleCnt4;
+            -- This should never happen
+            when others => audioSampleCnt <= audioSampleCnt1;
+          end case;
+          
+        elsif ( dataPacketSending = '1' and countX >= dataPreambleXPosStart and countX < dataXPosStart ) then
           -- Send data island preamble.
           ctl0 <= '1';
           ctl1 <= '0';
@@ -211,8 +386,10 @@ begin
           dat0 <= "11" & vsync & hsync;
           
           curEncType <= TMDSENC;
+          lastAudioProcessed <= '0';
+          sendCTSdone <= '0';
 
-        elsif( countY = 2 and ( countX = dataXPosStart or countX = dataXPosStart + 1 or
+        elsif( dataPacketSending = '1' and ( countX = dataXPosStart or countX = dataXPosStart + 1 or
                                 packetClkCnt = 32 or packetClkCnt = 33 )  ) then
           -- Send the guard band.
           ctl0 <= '0';
@@ -241,7 +418,7 @@ begin
             packetClkCnt <= packetClkCnt + 1;
           end if;   
 
-        elsif( countY = 2 and countX >= dataXPosStart + 2 and packetClkCnt < 28 ) then
+        elsif( dataPacketSending = '1' and countX >= dataXPosStart + 2 and packetClkCnt < 28 ) then
           -- Send the packets.
           packetClkCnt <= packetClkCnt + 1;
           ctl0 <= '0';
@@ -252,6 +429,8 @@ begin
           dat2 <= subpacket3( 0 )( 1 ) & subpacket2( 0 )( 1 ) & subpacket1( 0 )( 1 ) & subpacket0( 0 )( 1 ) ;
           
           curEncType <= TERCENC;
+          lastAudioProcessed <= '0';
+          sendCTSdone <= '0';
           
           -- Shift.
           for I in 0 to 6 loop
@@ -272,18 +451,29 @@ begin
           
           -- ECC.
           if ( packetClkCnt = 0 or packetClkCnt = 4 or packetClkCnt = 8 or
-               packetClkCnt = 12 or packetClkCnt = 14 or packetClkCnt = 18 or
+               packetClkCnt = 12 or packetClkCnt = 16 or packetClkCnt = 20 or
                packetClkCnt = 24 ) then
             eccEnable <= '1';
           else
             eccEnable <= '0';
           end if;
           
-          if ( packetClkCnt = 25 ) then
+          if ( packetClkCnt = 0 or packetClkCnt = 8 or packetClkCnt = 16 ) then
+            eccHeaderEnable <= '1';
+          else
+            eccHeaderEnable <= '0';
+          end if;
+          
+          -- Data ECC
+          if ( packetClkCnt = 26 ) then
             ecc0 <= ecc0_int;
             ecc1 <= ecc1_int;
             ecc2 <= ecc2_int;
             ecc3 <= ecc3_int;
+          end if;
+          
+          -- Header ECC.
+          if ( packetClkCnt = 18 ) then
             ecc4 <= ecc4_int;
           end if;
           
@@ -317,7 +507,7 @@ begin
             dat0( 0 ) <= hsync;
             dat0( 1 ) <= vsync;
             dat0( 2 ) <= ecc4( 0 );
-            dat0( 3 ) <= '0';
+            dat0( 3 ) <= '1';
             
             ecc4( 6 downto 0 ) <= ecc4( 7 downto 1 );
             ecc4( 7 ) <= '0';
@@ -325,7 +515,7 @@ begin
             dat0 <= ( others => '0' );
           end if;
                     
-        elsif( countY = 2 and packetClkCnt >= 28 and packetClkCnt < 32 ) then
+        elsif( dataPacketSending = '1' and packetClkCnt >= 28 and packetClkCnt < 32 ) then
           packetClkCnt <= packetClkCnt + 1;
           
           dat1 <= ecc3( 0 ) & ecc2( 0 ) & ecc1( 0 ) & ecc0( 0 ) ;
@@ -334,7 +524,7 @@ begin
           dat0( 0 ) <= hsync;
           dat0( 1 ) <= vsync;
           dat0( 2 ) <= ecc4( 0 );
-          dat0( 3 ) <= '0';
+          dat0( 3 ) <= '1';
           
           ecc4( 6 downto 0 ) <= ecc4( 7 downto 1 );
           ecc4( 7 ) <= '0';
@@ -352,6 +542,9 @@ begin
           ecc0( 7 downto 6 ) <= "00";
           
           curEncType <= TERCENC;
+          lastAudioProcessed <= '0';
+          sendCTSdone <= '0';
+          
         elsif ( ( countY >= -1 and countY <= 718 ) and countX >= videoPreambleXPosStart and countX < videoGuardXPosStart ) then
           -- Send video preamble.
           ctl0 <= '1';
@@ -364,6 +557,8 @@ begin
           dat0 <= "11" & vsync & hsync;
           
           curEncType <= TMDSENC;
+          dataPacketSending <= '0';
+          lastAudioProcessed <= '0';
           
         elsif( ( countY >= -1 and countY <= 718 ) and countX >= videoGuardXPosStart  ) then
           -- Send the video guard band.
@@ -376,8 +571,10 @@ begin
           guard2 <= "1011001100";
           
           curEncType <= NOENC;
-
-          
+          dataPacketSending <= '0';
+          lastAudioProcessed <= '0';
+          sendCTSdone <= '0';
+ 
         else
           ctl0 <= '0';
           ctl1 <= '0';
@@ -387,9 +584,79 @@ begin
           guard1 <= ( others => '0' );
           guard2 <= ( others => '0' );
           curEncType <= TMDSENC;
+          dataPacketSending <= '0';
+          lastAudioProcessed <= '0';
+          sendCTSdone <= '0';
         end if;
       end if;
     end if;  
+  end process;
+  
+  -- Small helper counters.
+  process( audioSampleCnt ) is
+  variable tmpCnt : integer range 0 to 191;
+  begin
+    tmpCnt := audioSampleCnt;
+    if ( tmpCnt < 191 ) then
+      tmpCnt := tmpCnt + 1;
+    else
+      tmpCnt := 0;
+    end if;
+    
+    audioSampleCnt1 <= tmpCnt;
+    
+    if ( tmpCnt < 191 ) then
+      tmpCnt := tmpCnt + 1;
+    else
+      tmpCnt := 0;
+    end if;
+    
+    audioSampleCnt2 <= tmpCnt;
+    
+    if ( tmpCnt < 191 ) then
+      tmpCnt := tmpCnt + 1;
+    else
+      tmpCnt := 0;
+    end if;
+    
+    audioSampleCnt3 <= tmpCnt;
+    
+    if ( tmpCnt < 191 ) then
+      tmpCnt := tmpCnt + 1;
+    else
+      tmpCnt := 0;
+    end if;
+    
+    audioSampleCnt4 <= tmpCnt;
+    
+  end process;
+  
+  -- Counter when to send a CTS packet.
+  process( pxlClk ) is
+  begin
+    if ( rising_edge( pxlClk ) ) then
+      if ( rst = '1' ) then
+        ctsPacketSendCnt <= (others => '0' );
+        sendCTS <= '1';
+        prevADClk <= '0';
+      else
+        prevADClk <= sample128Clk;
+        
+        if ( sendCTSdone = '1' ) then
+            sendCTS <= '0';
+        end if;
+        
+        if ( prevADClk = '0' and sample128Clk = '1' ) then    
+          ctsPacketSendCnt <= ctsPacketSendCnt + 1;
+          
+          if ( ctsPacketSendCnt = unsigned( audioRegenN ) ) then 
+            ctsPacketSendCnt <= (others => '0' );
+            sendCTS <= '1';
+          end if;
+          
+        end if;
+      end if;
+    end if;
   end process;
   
   -- Just a simple delaying process.
@@ -401,11 +668,21 @@ begin
         redNoEnc_del <= ( others => '0' );
         blueNoEnc_del <= ( others => '0' );
         greenNoEnc_del <= ( others => '0' );
+        subpacket0Del <= ( others => '0' );
+        subpacket1Del <= ( others => '0' );
+        subpacket2Del <= ( others => '0' );
+        subpacket3Del <= ( others => '0' );
+        packetheaderDel <= ( others => '0' );
       else
         curEncType_del <= curEncType;
         redNoEnc_del <= redNoEnc;
         blueNoEnc_del <= blueNoEnc;
         greenNoEnc_del <= greenNoEnc;
+        subpacket0Del <= subpacket0( 0 );
+        subpacket1Del <= subpacket1( 0 );
+        subpacket2Del <= subpacket2( 0 );
+        subpacket3Del <= subpacket3( 0 );
+        packetheaderDel <= packetheader( 0 );
       end if;
     end if;
   end process;
@@ -523,7 +800,7 @@ begin
     -- ECC
     ecc0Gen : entity work.ecc( rtl )
     port map(
-      datIn => subpacket0( 0 )( 7 downto 0 ),
+      datIn => subpacket0Del,
       newPacket => eccNewPacket,
       enable => eccEnable,
       clk => pxlClk,
@@ -533,7 +810,7 @@ begin
     
     ecc1Gen : entity work.ecc( rtl )
     port map(
-      datIn => subpacket1( 0 )( 7 downto 0 ),
+      datIn => subpacket1Del,
       newPacket => eccNewPacket,
       enable => eccEnable,
       clk => pxlClk,
@@ -543,7 +820,7 @@ begin
     
     ecc2Gen : entity work.ecc( rtl )
     port map(
-      datIn => subpacket2( 0 )( 7 downto 0 ),
+      datIn => subpacket2Del,
       newPacket => eccNewPacket,
       enable => eccEnable,
       clk => pxlClk,
@@ -553,7 +830,7 @@ begin
     
     ecc3Gen : entity work.ecc( rtl )
     port map(
-      datIn => subpacket3( 0 )( 7 downto 0 ),
+      datIn => subpacket3Del,
       newPacket => eccNewPacket,
       enable => eccEnable,
       clk => pxlClk,
@@ -563,13 +840,82 @@ begin
     
     ecc4Gen : entity work.ecc( rtl )
     port map(
-      datIn => packetheader( 0 )( 7 downto 0 ),
+      datIn => packetheaderDel,
       newPacket => eccNewPacket,
-      enable => eccEnable,
+      enable => eccHeaderEnable,
       clk => pxlClk,
       rst => rst,
       datOut => ecc4_int
     );
+    
+    -- Audio.
+    pwm2pcmInst: entity work.pwm2pcm( rtl )
+    generic map(
+      clkFreq => clkFreq,
+      sampleFreq => audioSampleFreq
+    )
+    port map(
+      pwmInL => audioLIn,
+      pwmInR => audioRIn,
+      clk => pxlClk,
+      rst => rst,
+      sample128ClkOut => sample128Clk,
+      datOutL => audioLOut,
+      datOutR => audioROut,
+      validOut => audioValidOut
+    );
+ 
+    -- Check for new audio packets.
+    process( pxlClk ) is 
+    begin
+      if ( rising_edge( pxlClk ) ) then
+        if ( rst = '1' ) then
+          lastAudioLSample0 <= ( others => '0' );
+          lastAudioLSample1 <= ( others => '0' );
+          lastAudioLSample2 <= ( others => '0' );
+          lastAudioLSample3 <= ( others => '0' );
+          
+          lastAudioRSample0 <= ( others => '0' );
+          lastAudioRSample1 <= ( others => '0' );
+          lastAudioRSample2 <= ( others => '0' );
+          lastAudioRSample3 <= ( others => '0' );
+          
+          audioSamplesPresent <= ( others => '0' );
+          newAudio <= '0';
+        else 
+          if ( lastAudioProcessed = '1' ) then
+            newAudio <= '0';
+            lastAudioLSample0 <= ( others => '0' );
+            lastAudioLSample1 <= ( others => '0' );
+            lastAudioLSample2 <= ( others => '0' );
+            lastAudioLSample3 <= ( others => '0' );
+            
+            lastAudioRSample0 <= ( others => '0' );
+            lastAudioRSample1 <= ( others => '0' );
+            lastAudioRSample2 <= ( others => '0' );
+            lastAudioRSample3 <= ( others => '0' );
+            
+            audioSamplesPresent <= ( others => '0' );
+          end if;
+          
+          if ( audioValidOut = '1' ) then
+            newAudio <= '1';
+            lastAudioLSample0( 23 downto 0 ) <= audioLOut & "00000000";
+            lastAudioLSample1 <= lastAudioLSample0;
+            lastAudioLSample2 <= lastAudioLSample1;
+            lastAudioLSample3 <= lastAudioLSample2;
+            
+            lastAudioRSample0( 23 downto 0 ) <= audioROut & "00000000";
+            lastAudioRSample1 <= lastAudioRSample0;
+            lastAudioRSample2 <= lastAudioRSample1;
+            lastAudioRSample3 <= lastAudioRSample2;
+            
+            audioSamplesPresent( 0 ) <= '1';
+            audioSamplesPresent( 3 downto 1 ) <= audioSamplesPresent( 2 downto 0 );
+          end if;
+        end if;
+      end if;
+    end process;
     
 
 end rtl;
