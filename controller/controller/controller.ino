@@ -111,7 +111,7 @@ void updateGBASignals() {
   uint8_t d1d0 = DDRD;
   d1d0 = d1d0 & 0b00000011;
   uint8_t dir = d1d0 | ( conDUp << 2 ) | ( conDDown << 3 ) | ( conDLeft << 4 ) |
-    ( conDRight << 5 ) | ( conA << 6 ) | ( conB << 4 );
+    ( conDRight << 5 ) | ( conA << 6 ) | ( conB << 7 );
   // Write them.
   DDRD = dir;
 
