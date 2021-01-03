@@ -54,6 +54,64 @@ as follows (check the previous figures for the pin names):
 | 19              | ARD13 |
 | 22              | IO9   |
 
+### Audio signals
+The GBA generates a stereo 8 bit audio signals as a PWM which is then
+amplified. We pick up both PWM signals using the following two
+connections (the test point names can be found on the silkscreen of the
+GBA motherboard).
+
+| GBA Test Point  | FPGA Pin |
+|-----------------|----------|
+| S01             | ARD2 |
+| S02             | ARD3 |
+
+### Clock signal
+The clock crystal has to be removed and a pad of the former crystal is 
+connected to an FPGA pin. The following figure shows which pad has to be 
+connected (the highlighted one) to the FPGA pin.
+
+![XTAL pin](./figures/xtal.png "XTAL pin")
+
+| GBA | FPGA Pin |
+|-----|----------|
+| XTAL pad  | IO8 |
+
+
+### Controller signals
+A cheap Arduino (e.g., a small Nano) handles the controller input (the 
+FPGA board is not used here, as we would run out of pins here). The
+following figure shows the pinout of a SNES controller plug.
+
+![SNES pinput](./figures/snes.png "SNES pinout")
+
+The SNES controller port is connected to the Arduino pins as follows:
+
+| SNES controller | Arduino Pin |
+|-----------------|-------------|
+| 5V              | 5V |
+| Clk             | A1 |
+| Latch           | A0 |
+| Data            | A2 |
+| Gnd             | Gnd |
+
+
+The following table shows the connections between the GBA motherboard
+and Arduino pins for simulating the button presses.
+
+|  GBA Test Point  | Arduino Pin |
+|------------------|-------------|
+| TP6              | D2 |
+| TP7              | D3 |
+| TP5              | D4 |
+| TP4              | D5 |
+| TP0              | D6 |
+| TP1              | D7 |
+| TP9              | D8 |
+| TP8              | D9 |
+| TP3              | D10 |
+| TP2              | D11 |
+
+
 ## TODOs
 
 *README TODO:*

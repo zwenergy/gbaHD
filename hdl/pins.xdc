@@ -46,6 +46,42 @@ set_property PACKAGE_PIN B1 [get_ports {redPxl[3]}]
 # FPGA AR D13
 set_property PACKAGE_PIN H2 [get_ports {redPxl[4]}]
 
+# Audio Pins.
+# Audio Left (FPGA_AR_D2)
+set_property PACKAGE_PIN A10 [get_ports audioLIn]
+set_property IOSTANDARD LVCMOS33 [get_ports audioLIn]
+# Audio Right (FPGA_AR_D3)
+set_property PACKAGE_PIN B6 [get_ports audioRIn]
+set_property IOSTANDARD LVCMOS33 [get_ports audioRIn]
+
+
+# ADC Pins.
+# D7
+#set_property PACKAGE_PIN H12 [get_ports {adcDatIn[7]}]
+# D6
+#set_property PACKAGE_PIN H11 [get_ports {adcDatIn[6]}]
+# D5
+#set_property PACKAGE_PIN C11 [get_ports {adcDatIn[5]}]
+# D4
+#set_property PACKAGE_PIN F12 [get_ports {adcDatIn[4]}]
+# D3
+#set_property PACKAGE_PIN E12 [get_ports {adcDatIn[3]}]
+# D2
+#set_property PACKAGE_PIN D12 [get_ports {adcDatIn[2]}]
+# D1
+#set_property PACKAGE_PIN J2 [get_ports {adcDatIn[1]}]
+# D0
+#set_property PACKAGE_PIN J3 [get_ports {adcDatIn[0]}]
+# ADC Clk
+#set_property PACKAGE_PIN C5 [get_ports adcClkOut]
+# ADC nOE
+#set_property PACKAGE_PIN J4 [get_ports adcnOE]
+
+#set_property IOSTANDARD LVCMOS33 [get_ports adcDatIn]
+#set_property IOSTANDARD LVCMOS33 [get_ports adcClkOut]
+#set_property IOSTANDARD LVCMOS33 [get_ports adcnOE]
+
+
 set_property IOSTANDARD LVCMOS33 [get_ports redPxl]
 set_property IOSTANDARD LVCMOS33 [get_ports greenPxl]
 set_property IOSTANDARD LVCMOS33 [get_ports bluePxl]
