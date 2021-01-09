@@ -33,9 +33,9 @@ entity captureGBA is
 end captureGBA;
 
 architecture rtl of captureGBA is
-signal cntX : integer range 0 to 245;
+signal cntX : integer range -1 to 245;
 signal cntY : integer range 0 to 165;
-signal prevCntX : integer range 0 to 245;
+signal prevCntX : integer range -1 to 245;
 signal prevCntY : integer range 0 to 165;
 signal validLine_int : std_logic;
 signal curRedPxl : std_logic_vector( 4 downto 0 );
@@ -75,14 +75,11 @@ begin
         vsync_int <= '1';
         vsync_del <= '1';
         cntY <= 0;
-        cntX <= 0;
+        cntX <= -1;
         dclk_prev <= '1';
         curRedPxl <= ( others => '0' );
         curGreenPxl <= ( others => '0' );
         curBluePxl <= ( others => '0' );
-        redPxlOut <= ( others => '0' );
-        greenPxlOut <= ( others => '0' );
-        bluePxlOut <= ( others => '0' );
         newPxl <= '0';
         prevCntY <= 0;
         prevCntX <= 0;
@@ -98,7 +95,7 @@ begin
         
         -- Shift newPxl.
         -- The very first pixel seems to be not a valid one (...start bit?)
-        if ( prevCntX = 0 ) then
+        if ( cntX = -1 ) then
           newPxl <= '0';
         else
           newPxl <= dclkRise;
@@ -114,11 +111,6 @@ begin
           curBluePxl <= bluePxl;
         end if;
         
-        -- Extend prev. pxl.
-        redPxlOut <= curRedPxl & redExt;
-        greenPxlOut <= curGreenPxl & greenExt;
-        bluePxlOut <= curBluePxl & blueExt;
-        
         if ( vsyncFall = '1' ) then
           syncCnt <= 0;
         elsif ( vsync_int = '0' ) then
@@ -127,10 +119,10 @@ begin
         
         if ( vsyncRise = '1' and syncCnt >= minSyncCnt ) then
           cntY <= 0;
-          cntX <= 0;
+          cntX <= -1;
         elsif ( dclkRise = '1' ) then
-          if ( cntX = 240 ) then
-            cntX <= 0;
+          if ( cntX = 239 ) then
+            cntX <= -1;
             cntY <= cntY + 1;
           else
             cntX <= cntX + 1;
@@ -140,10 +132,15 @@ begin
     end if;
   end process;
   
+  -- Extend prev. pxl.
+  redPxlOut <= curRedPxl & redExt;
+  greenPxlOut <= curGreenPxl & greenExt;
+  bluePxlOut <= curBluePxl & blueExt;
+  
   pxlCnt <= std_logic_vector( to_unsigned( prevCntX, pxlCnt'length ) );
   
-  -- Since the very first bit is a start bit, we have to count until 240
-  validLine <= '1' when ( newPxl = '1' ) and ( prevCntX = 240 ) else '0';
+  -- Since the very first bit is a start bit, we have to count until 239
+  validLine <= '1' when ( newPxl = '1' ) and ( prevCntX = 239 ) else '0';
  
 
 end rtl;

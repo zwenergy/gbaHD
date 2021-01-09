@@ -112,6 +112,19 @@ and Arduino pins for simulating the button presses.
 | TP2              | D11 |
 
 
+### Power connections
+The GBA and Arduino can be powered via pins of the FPGA board. For the
+GBA, the battery holders on the motherboard can be desoldered, as they are
+not required anymore. Then connect the "B+" pad of the GBA motherboard to
+the "3V3" pin of the SEA board and the GBA's "B-" pad to a GND pin of the
+SEA board. Keep the power switch of the GBA on the ON position
+(preferably fix it in this position, as the switch is quite smooth-running).
+
+The Arduino requires 5V instead of 3.3V. For this, put the jumper 
+"PWR_MODE" to the "ON" position. Then connect the 5V pin of the SEA
+board's Arduino ICSP pins to the 5V pin of the Arduino.
+
+
 ## TODOs
 
 *README TODO:*
