@@ -34,25 +34,25 @@ frontside of the GBA motherboard close to the top.
 The connections between the GBA display signals and the FPGA board are 
 as follows (check the previous figures for the pin names):
 
-| GBA Display Pin | FPGA Pin |
-|-----------------|----------|
-| 2               | IO0   |
-| 5               | IO1   |
-| 6               | ARD5  |
-| 7               | IO2   |
-| 8               | ARD6  |
-| 9               | IO3   |
-| 10              | ARD7  |
-| 11              | IO4   |
-| 12              | ARD8  |
-| 13              | IO5   |
-| 14              | ARD9  |
-| 15              | IO6   |
-| 16              | ARD10 |
-| 17              | IO7   |
-| 18              | ARD11 |
-| 19              | ARD13 |
-| 22              | IO9   |
+| GBA Display Pin | FPGA Pin | GBA LCD Pin |
+|-----------------|----------|----------|
+| 2               | IO0   | 26 |
+| 5               | IO1   | 23 |
+| 6               | ARD5  | 22 |
+| 7               | IO2   | 21 |
+| 8               | ARD6  | 20 |
+| 9               | IO3   | 19 |
+| 10              | ARD7  | 17 |
+| 11              | IO4   | 16 |
+| 12              | ARD8  | 15 |
+| 13              | IO5   | 14 |
+| 14              | ARD9  | 13 |
+| 15              | IO6   | 12 |
+| 16              | ARD10 | 11 |
+| 17              | IO7   | 10 |
+| 18              | ARD11 | 9 |
+| 19              | ARD13 | 8 |
+| 22              | IO9   | 3 |
 
 ### Audio signals
 The GBA generates a stereo 8 bit audio signals as a PWM which is then
