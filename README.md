@@ -34,7 +34,7 @@ frontside of the GBA motherboard close to the top.
 The connections between the GBA display signals and the FPGA board are 
 as follows (check the previous figures for the pin names):
 
-| GBA Display Pin | FPGA Pin | GBA LCD Pin |
+| GBA Display Pin | FPGA Pin | GBA LCD Connector Pin |
 |-----------------|----------|----------|
 | 2               | IO0   | 26 |
 | 5               | IO1   | 23 |
