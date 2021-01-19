@@ -92,6 +92,11 @@ constant hsyncpxl : integer := 36;
 constant maxHor : integer := 1539;
 constant maxVer : integer := 911; 
 
+constant aviFrameHeader : tPacketHeader := ( 0 => "10000010", 1 => "00000010", 2 => "00001101" );
+constant aviPacket0 : tSubpacket := ( 0 => "00010001", 1 => "00010000", 2 => "00101010", 3 => "00000100",
+  4 => "00000000", 5 => "00000000", 6 => "00000000" );
+constant aviLine : integer := 42;
+
 -- Encoding-Type
 type tStatus is ( TMDSENC, TERCENC, NOENC );
 signal curEncType, curEncType_del : tStatus;
@@ -229,7 +234,7 @@ begin
         audioSampleCnt <= 0;
         sendCTSdone <= '0';
       else
-        -- Send the audio reconstruction paket at the 2nd active line.
+        -- Send the audio reconstruction paket.
         if ( sendCTS = '1' and countX = dataPreambleXPosStart - 1 ) then
           -- Set the packets and header.
           subpacket0( 0 ) <= "00000000";
@@ -270,6 +275,19 @@ begin
           dataPacketSending <= '1';
           lastAudioProcessed <= '0';
           sendCTSdone <= '1';
+          
+        -- Send an AVI frame.
+--        elsif ( countX = dataPreambleXPosStart - 1 and countY = aviLine ) then
+--          subpacket0 <= aviPacket0;
+--          subpacket1 <= ( others => ( others => '0' ) );
+--          subpacket2 <= ( others => ( others => '0' ) );
+--          subpacket3 <= ( others => ( others => '0' ) );
+--          packetHeader <= aviFrameHeader;
+          
+--          curEncType <= TMDSENC;
+--          dataPacketSending <= '1';
+--          lastAudioProcessed <= '0';
+--          sendCTSdone <= '0';
           
         -- Send an audio packet.
         elsif ( countX = dataPreambleXPosStart - 1 and newAudio = '1' ) then
@@ -437,15 +455,18 @@ begin
             subpacket0( I )( 5 downto 0 ) <= subpacket0( I )( 7 downto 2 );
             subpacket1( I )( 5 downto 0 ) <= subpacket1( I )( 7 downto 2 );
             subpacket2( I )( 5 downto 0 ) <= subpacket2( I )( 7 downto 2 );
+            subpacket3( I )( 5 downto 0 ) <= subpacket3( I )( 7 downto 2 );
             
             if( I = 6 ) then
               subpacket0( I )( 7 downto 6 ) <= "00";
               subpacket1( I )( 7 downto 6 ) <= "00";
               subpacket2( I )( 7 downto 6 ) <= "00";
+              subpacket3( I )( 7 downto 6 ) <= "00";
             else
               subpacket0( I )( 7 downto 6 ) <= subpacket0( I + 1 )( 1 downto 0 );
               subpacket1( I )( 7 downto 6 ) <= subpacket1( I + 1 )( 1 downto 0 );
               subpacket2( I )( 7 downto 6 ) <= subpacket2( I + 1 )( 1 downto 0 );
+              subpacket3( I )( 7 downto 6 ) <= subpacket3( I + 1 )( 1 downto 0 );
             end if;
           end loop;
           

@@ -43,9 +43,6 @@ signal curGreenPxl : std_logic_vector( 4 downto 0 );
 signal curBluePxl : std_logic_vector( 4 downto 0 );
 signal dclk_int : std_logic;
 signal dclk_prev : std_logic;
-signal redExt : std_logic_vector( 2 downto 0 );
-signal greenExt : std_logic_vector( 2 downto 0 );
-signal blueExt : std_logic_vector( 2 downto 0 );
 signal dclkRise : std_logic;
 signal newPxl : std_logic;
 signal vsyncFall : std_logic;
@@ -55,10 +52,67 @@ signal vsync_del : std_logic;
 signal syncCnt : integer range 0 to integer(ceil(325000.0/clkPeriodNS));
 constant minSyncCnt : integer := integer(ceil(136500.0/clkPeriodNS));
 begin
+
+  redExtProc : process( curRedPxl ) is
+  variable pxl_tmp : std_logic_vector( 7 downto 0 );
+  begin
+    -- Extend.
+    if ( curRedPxl( 0 ) = '1' ) then
+      pxl_tmp := curRedPxl &  "111";
+    else
+      pxl_tmp := curRedPxl &  "000";
+    end if;
+    
+    -- Keep limited range.
+    if ( unsigned( pxl_tmp ) < 16 ) then
+      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
+    elsif ( unsigned( pxl_tmp ) > 235 ) then
+      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
+    end if;
+    
+    redPxlOut <= pxl_tmp;
+  end process;
   
-  redExt <= "111" when  curRedPxl( 0 ) = '1' else "000";
-  greenExt <= "111" when  curGreenPxl( 0 ) = '1' else "000";
-  blueExt <= "111" when  curBluePxl( 0 ) = '1' else "000";
+  blueExtProc : process( curBluePxl ) is
+  variable pxl_tmp : std_logic_vector( 7 downto 0 );
+  begin
+    -- Extend.
+    if ( curBluePxl( 0 ) = '1' ) then
+      pxl_tmp := curBluePxl &  "111";
+    else
+      pxl_tmp := curBluePxl &  "000";
+    end if;
+    
+    -- Keep limited range.
+    if ( unsigned( pxl_tmp ) < 16 ) then
+      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
+    elsif ( unsigned( pxl_tmp ) > 235 ) then
+      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
+    end if;
+    
+    bluePxlOut <= pxl_tmp;
+  end process;
+  
+  greenExtProc : process( curGreenPxl ) is
+  variable pxl_tmp : std_logic_vector( 7 downto 0 );
+  begin
+    -- Extend.
+    if ( curGreenPxl( 0 ) = '1' ) then
+      pxl_tmp := curGreenPxl &  "111";
+    else
+      pxl_tmp := curGreenPxl &  "000";
+    end if;
+    
+    -- Keep limited range.
+    if ( unsigned( pxl_tmp ) < 16 ) then
+      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
+    elsif ( unsigned( pxl_tmp ) > 235 ) then
+      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
+    end if;
+    
+    greenPxlOut <= pxl_tmp;
+  end process;
+  
   
   dclkRise <= '1' when ( dclk_int = '1' and dclk_prev = '0' ) else '0';
   newFrame <= '1' when ( prevCntY = 0 ) else '0';
@@ -131,11 +185,6 @@ begin
       end if;
     end if;
   end process;
-  
-  -- Extend prev. pxl.
-  redPxlOut <= curRedPxl & redExt;
-  greenPxlOut <= curGreenPxl & greenExt;
-  bluePxlOut <= curBluePxl & blueExt;
   
   pxlCnt <= std_logic_vector( to_unsigned( prevCntX, pxlCnt'length ) );
   

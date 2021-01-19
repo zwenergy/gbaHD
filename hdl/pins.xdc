@@ -32,7 +32,7 @@ set_property PACKAGE_PIN E11 [get_ports dclk]
 # FPGA AR D5
 set_property PACKAGE_PIN B5 [get_ports {bluePxl[1]}]
 # FPGA AR D6
-set_property PACKAGE_PIN A5 [get_ports {bluePxl[3]}]
+set_property PACKAGE_PIN A4 [get_ports {bluePxl[3]}]
 # FPGA AR D7
 set_property PACKAGE_PIN A3 [get_ports {greenPxl[0]}]
 # FPGA AR D8
