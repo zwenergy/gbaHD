@@ -64,11 +64,11 @@ begin
     end if;
     
     -- Keep limited range.
-    if ( unsigned( pxl_tmp ) < 16 ) then
-      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
-    elsif ( unsigned( pxl_tmp ) > 235 ) then
-      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
-    end if;
+--    if ( unsigned( pxl_tmp ) < 16 ) then
+--      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
+--    elsif ( unsigned( pxl_tmp ) > 235 ) then
+--      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
+--    end if;
     
     redPxlOut <= pxl_tmp;
   end process;
@@ -84,11 +84,11 @@ begin
     end if;
     
     -- Keep limited range.
-    if ( unsigned( pxl_tmp ) < 16 ) then
-      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
-    elsif ( unsigned( pxl_tmp ) > 235 ) then
-      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
-    end if;
+--    if ( unsigned( pxl_tmp ) < 16 ) then
+--      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
+--    elsif ( unsigned( pxl_tmp ) > 235 ) then
+--      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
+--    end if;
     
     bluePxlOut <= pxl_tmp;
   end process;
@@ -104,11 +104,11 @@ begin
     end if;
     
     -- Keep limited range.
-    if ( unsigned( pxl_tmp ) < 16 ) then
-      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
-    elsif ( unsigned( pxl_tmp ) > 235 ) then
-      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
-    end if;
+--    if ( unsigned( pxl_tmp ) < 16 ) then
+--      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
+--    elsif ( unsigned( pxl_tmp ) > 235 ) then
+--      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
+--    end if;
     
     greenPxlOut <= pxl_tmp;
   end process;

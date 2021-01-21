@@ -48,6 +48,9 @@ signal redPxl : std_logic_vector( 7 downto 0 );
 signal greenPxl : std_logic_vector( 7 downto 0 );
 signal bluePxl : std_logic_vector( 7 downto 0 );
 
+constant gbaVideoXStart : integer := 160;
+constant gbaVideoYStart : integer := 40;
+
 -- Signals to be encoded
 signal redDat : std_logic_vector( 7 downto 0 );
 signal greenDat : std_logic_vector( 7 downto 0 );
@@ -166,8 +169,10 @@ begin
           if ( countY = maxVer ) then
             countY <= -25;
           elsif ( newFrameIn = '1' and newFrameProcessed = '0' ) then
+            -- We set it to a line close to the GBA video center, otherwise
+            -- we would need a larger frame buffer.
+            countY <= gbaVideoYStart;
             newFrameProcessed <= '1';
-            countY <= -25;
           else
             countY <= countY + 1;
           
@@ -719,7 +724,8 @@ begin
               '0' when ( countY < 0 ) else
               '1' when ( lineCnt4 = 3 ) else
               '0';
-  drawGBA <= '1' when ( countX < 959 and ( countY >= 0 and countY < 639 ) ) else '0';
+  drawGBA <= '1' when ( countX >= gbaVideoXStart and countX < ( gbaVideoXStart + 960 ) and 
+                      ( countY >= gbaVideoYStart and countY < ( gbaVideoYStart + 640 ) ) ) else '0';
   
   hSync <= '1' when ( countXDel >= 1280 + hfrontporch ) and ( countXDel < 1280 + hfrontporch + hsyncpxl ) else '0';
   vSync <= '1' when ( countYDel < -vbackporch) else '0';
