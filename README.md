@@ -50,6 +50,9 @@ as follows (check the previous figures for the pin names):
 | 15 | IO6 | 12 | 11 |
 | 16 | ARD10 | 11 | 10 |
 | 17 | IO7 | 10 | 9 |
+| 18 | ARD11 | 9 | 8
+| 19 | ARD13 | 8 | 7
+| 22 | IO9   | 3 | 2
 
 ### Audio signals
 The GBA generates a stereo 8 bit audio signals as a PWM which is then
