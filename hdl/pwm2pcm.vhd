@@ -114,8 +114,9 @@ begin
           
           diffL <= highCntL - lowCntL;
           
-          curSampleL( 15 downto ( 16 - highCntBits ) ) <= std_logic_vector( diffL );
-          curSampleL( 15 - highCntBits downto 0 ) <= ( others => '0' );
+          curSampleL( 15 ) <= diffL( highCntBits - 1 );
+          curSampleL( 14 downto ( 15 - highCntBits ) ) <= std_logic_vector( diffL );
+          curSampleL( 14 - highCntBits downto 0 ) <= ( others => '0' );
           
         elsif ( pwmL_int = '1' ) then
           highCntL <= highCntL + 1;
@@ -132,8 +133,9 @@ begin
           
           diffR <= highCntR - lowCntR;
           
-          curSampleR( 15 downto ( 16 - highCntBits ) ) <= std_logic_vector( diffR );
-          curSampleR( 15 - highCntBits downto 0 ) <= ( others => '0' );
+          curSampleR( 15 ) <= diffR( highCntBits - 1 );
+          curSampleR( 14 downto ( 15 - highCntBits ) ) <= std_logic_vector( diffR );
+          curSampleR( 14 - highCntBits downto 0 ) <= ( others => '0' );
           
         elsif ( pwmR_int = '1' ) then
           highCntR <= highCntR + 1;
