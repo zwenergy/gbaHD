@@ -91,9 +91,10 @@ constant vsyncpxl : integer := 5;
 constant vbackporch : integer := 20;
 constant hfrontporch : integer := 64;
 constant hsyncpxl : integer := 36;
+constant ystart : integer := -( vsyncpxl + vbackporch );
 
 constant maxHor : integer := 1539;
-constant maxVer : integer := 911; 
+constant maxVer : integer := 911 + ystart; 
 
 constant aviFrameHeader : tPacketHeader := ( 0 => "10000010", 1 => "00000010", 2 => "00001101" );
 constant aviPacket0 : tSubpacket := ( 0 => "00010001", 1 => "00010000", 2 => "00101010", 3 => "00000100",
@@ -167,7 +168,7 @@ begin
         if ( countX = maxHor ) then
           countX <= 0;
           if ( countY = maxVer ) then
-            countY <= -25;
+            countY <= ystart;
           elsif ( newFrameIn = '1' and newFrameProcessed = '0' ) then
             -- We set it to a line close to the GBA video center, otherwise
             -- we would need a larger frame buffer.
