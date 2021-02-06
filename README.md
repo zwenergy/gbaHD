@@ -130,7 +130,9 @@ have to be in the dimensions of 320x180 pixels (going with the same resolution
 of the Game Boy). Only the border is taken into account, the display area 
 (middle 240x160) is ignored (see template.bmp). To generate a custom border, 
 execute
+
 `makeBorder.py <IMAGEFILE> (<CUTBITS>)`
+
 The first parameter is the image file for the border, the second is an 
 optional parameter for reducing the image color depth. After executing 
 the script a new .vhdl should have been created. Replace the original 
