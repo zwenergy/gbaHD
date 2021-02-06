@@ -124,6 +124,23 @@ The Arduino requires 5V instead of 3.3V. For this, put the jumper
 "PWR_MODE" to the "ON" position. Then connect the 5V pin of the SEA
 board's Arduino ICSP pins to the 5V pin of the Arduino.
 
+## Custom Borders
+Custom borders are currently in a kind of experimental state. Border images 
+have to be in the dimensions of 320x180 pixels (going with the same resolution
+of the Game Boy). Only the border is taken into account, the display area 
+(middle 240x160) is ignored (see template.bmp). To generate a custom border, 
+execute
+`makeBorder.py <IMAGEFILE> (<CUTBITS>)`
+The first parameter is the image file for the border, the second is an 
+optional parameter for reducing the image color depth. After executing 
+the script a new .vhdl should have been created. Replace the original 
+`borderGen.vhdl` with this one and run the synthesis.
+
+If the synthesis fails, the border is too complex. Try to simplify the 
+border image or use the color depth reduction of the makeBorder.py script. 
+The optional parameter sets the number of bits to reduce in color space. 
+E.g., setting CUTBITS to 2 will reduce the color depth per color from 
+8 bits to 6 bits.
 
 ## TODOs
 

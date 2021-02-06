@@ -30,10 +30,14 @@ entity imageGen is
 end imageGen;
 
 architecture rtl of imageGen is
-signal countX : integer range 0 to 1665;
-signal countY : integer range -25 to 1000;
-signal countXDel : integer range 0 to 1665;
-signal countYDel : integer range -25 to 1000;
+constant xMin : integer := 0;
+constant xMax : integer := 1665;
+constant yMin : integer := -25;
+constant yMax : integer := 1000;
+signal countX : integer range xMin to xMax;
+signal countY : integer range yMin to yMax;
+signal countXDel : integer range xMin to xMax;
+signal countYDel : integer range yMin to yMax;
 signal hSync : std_logic;
 signal vSync : std_logic;
 signal ctrl : std_logic_vector( 1 downto 0 );
@@ -55,6 +59,7 @@ constant gbaVideoYStart : integer := 40;
 signal redDat : std_logic_vector( 7 downto 0 );
 signal greenDat : std_logic_vector( 7 downto 0 );
 signal blueDat : std_logic_vector( 7 downto 0 );
+signal borderRed, borderGreen, borderBlue : std_logic_vector( 7 downto 0 );
 
 signal redDat4b, greenDat4b, blueDat4b : std_logic_vector( 7 downto 0 );
 
@@ -735,9 +740,9 @@ begin
   ctrl( 1 ) <= vSync;
   ctrl( 0 ) <= hSync;
   
-  redDat <= redPxl when ( drawGBA ='1' ) else ( others => '0' );
-  greenDat <= greenPxl when ( drawGBA ='1' ) else ( others => '0' );
-  blueDat <= bluePxl when ( drawGBA ='1' ) else ( others => '0' );  
+  redDat <= redPxl when ( drawGBA ='1' ) else borderRed;
+  greenDat <= greenPxl when ( drawGBA ='1' ) else borderGreen;
+  blueDat <= bluePxl when ( drawGBA ='1' ) else borderBlue;
   
   --Capture the next pixel.
   getPixel:process( pxlClk ) is
@@ -945,5 +950,20 @@ begin
       end if;
     end process;
     
+  -- Border generation.
+  border : entity work.borderGen( rtl )
+  generic map(
+    xMin => xMin,
+    xMax => xMax,
+    yMin => yMin,
+    yMax => yMax
+  )
+  port map(
+    x => countX,
+    y => countY,
+    r => borderRed,
+    g => borderGreen,
+    b => borderBlue
+  );
 
 end rtl;
