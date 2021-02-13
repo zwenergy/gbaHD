@@ -25,16 +25,19 @@ the Spartan Edge Accelerator board and the pin names used.
 
 ### Video signals
 The following figure shows the test points for the display signals on
-the GBA motherboard. I only used a 40 pin model so far, but the 32 pin
+the GBA motherboard. I only used a 32 pin model so far, but the 40 pin
 should have a similar layout. The test points can be found on the
 frontside of the GBA motherboard close to the top.
 
 ![SEA pins](./figures/displaypins.png "Display pins")
 
 The connections between the GBA display signals and the FPGA board are 
-as follows (check the previous figures for the pin names):
+as follows (check the previous figures for the pin names). The "GBA Testpoint" 
+column notes the testpoint to be connected to the corresponding FPGA
+pin. The next columns (GBA LCD XX-pin) give additional information where
+this signal is placed on the display ribbon cable.
 
-| FPGA Pin | GBA 40-Pin Testpoint | GBA LCD 40-pin | GBA LCD 32-Pin | GBA SP 34-Pin |
+| **FPGA Pin** | **GBA Testpoint** | GBA LCD 40-pin | GBA LCD 32-Pin | GBA SP 34-Pin |
 |-|-|-|-|-|
 | IO0 | 2 | 26 | 25 | 25 |
 | IO1 | 5 | 23 | 22 | 22 |
