@@ -102,7 +102,7 @@ constant maxHor : integer := 1539;
 constant maxVer : integer := 911 + ystart; 
 
 constant aviFrameHeader : tPacketHeader := ( 0 => "10000010", 1 => "00000010", 2 => "00001101" );
-constant aviPacket0 : tSubpacket := ( 0 => "00010001", 1 => "00010000", 2 => "00101010", 3 => "00000100",
+constant aviPacket0 : tSubpacket := ( 0 => "01000111", 1 => "00000000", 2 => "00101000", 3 => "00000000",
   4 => "00000000", 5 => "00000000", 6 => "00000000" );
 constant aviLine : integer := 42;
 
@@ -288,17 +288,17 @@ begin
           sendCTSdone <= '1';
           
         -- Send an AVI frame.
---        elsif ( countX = dataPreambleXPosStart - 1 and countY = aviLine ) then
---          subpacket0 <= aviPacket0;
---          subpacket1 <= ( others => ( others => '0' ) );
---          subpacket2 <= ( others => ( others => '0' ) );
---          subpacket3 <= ( others => ( others => '0' ) );
---          packetHeader <= aviFrameHeader;
+        elsif ( countX = dataPreambleXPosStart - 1 and countY = aviLine ) then
+          subpacket0 <= aviPacket0;
+          subpacket1 <= ( others => ( others => '0' ) );
+          subpacket2 <= ( others => ( others => '0' ) );
+          subpacket3 <= ( others => ( others => '0' ) );
+          packetHeader <= aviFrameHeader;
           
---          curEncType <= TMDSENC;
---          dataPacketSending <= '1';
---          lastAudioProcessed <= '0';
---          sendCTSdone <= '0';
+          curEncType <= TMDSENC;
+          dataPacketSending <= '1';
+          lastAudioProcessed <= '0';
+          sendCTSdone <= '0';
           
         -- Send an audio packet.
         elsif ( countX = dataPreambleXPosStart - 1 and newAudio = '1' ) then
