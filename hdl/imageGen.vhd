@@ -104,7 +104,11 @@ constant maxVer : integer := 911 + ystart;
 constant aviFrameHeader : tPacketHeader := ( 0 => "10000010", 1 => "00000010", 2 => "00001101" );
 constant aviPacket0 : tSubpacket := ( 0 => "01000111", 1 => "00000000", 2 => "00101000", 3 => "00000000",
   4 => "00000000", 5 => "00000000", 6 => "00000000" );
+constant audioInfoHeader : tPacketHeader := ( 0 => "10000100", 1 => "00000001", 2 => "00001010" );
+constant audioInfoPacket0 : tSubpacket := ( 0 => "01010011", 1 => "00010001", 2 => "00001101", 3 => "00000000",
+  4 => "00000000", 5 => "00000000", 6 => "00000000" );
 constant aviLine : integer := 42;
+signal aviFrameNext : std_logic;
 
 -- Encoding-Type
 type tStatus is ( TMDSENC, TERCENC, NOENC );
@@ -244,6 +248,7 @@ begin
         eccEnable <= '0';
         audioSampleCnt <= 0;
         sendCTSdone <= '0';
+        aviFrameNext <= '1';
       else
         -- Send the audio reconstruction paket.
         if ( sendCTS = '1' and countX = dataPreambleXPosStart - 1 ) then
@@ -287,18 +292,29 @@ begin
           lastAudioProcessed <= '0';
           sendCTSdone <= '1';
           
-        -- Send an AVI frame.
+        -- Send an info frame.
         elsif ( countX = dataPreambleXPosStart - 1 and countY = aviLine ) then
-          subpacket0 <= aviPacket0;
-          subpacket1 <= ( others => ( others => '0' ) );
-          subpacket2 <= ( others => ( others => '0' ) );
-          subpacket3 <= ( others => ( others => '0' ) );
-          packetHeader <= aviFrameHeader;
-          
+          if ( aviFrameNext = '1' ) then
+            -- Send AVI frame.
+            subpacket0 <= aviPacket0;
+            subpacket1 <= ( others => ( others => '0' ) );
+            subpacket2 <= ( others => ( others => '0' ) );
+            subpacket3 <= ( others => ( others => '0' ) );
+            packetHeader <= aviFrameHeader;
+          else
+            -- Send audio info frame.
+            subpacket0 <= audioInfoPacket0;
+            subpacket1 <= ( others => ( others => '0' ) );
+            subpacket2 <= ( others => ( others => '0' ) );
+            subpacket3 <= ( others => ( others => '0' ) );
+            packetHeader <= audioInfoHeader;
+          end if;
+
           curEncType <= TMDSENC;
           dataPacketSending <= '1';
           lastAudioProcessed <= '0';
           sendCTSdone <= '0';
+          aviFrameNext <= not aviFrameNext;
           
         -- Send an audio packet.
         elsif ( countX = dataPreambleXPosStart - 1 and newAudio = '1' ) then
