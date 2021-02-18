@@ -54,14 +54,13 @@ constant minSyncCnt : integer := integer(ceil(136500.0/clkPeriodNS));
 begin
 
   redExtProc : process( curRedPxl ) is
-  variable pxl_tmp : std_logic_vector( 7 downto 0 );
+  variable pxl_tmp, curPxl : unsigned( 12 downto 0 );
   begin
-    -- Extend.
-    if ( curRedPxl( 0 ) = '1' ) then
-      pxl_tmp := curRedPxl &  "111";
-    else
-      pxl_tmp := curRedPxl &  "000";
-    end if;
+    curPxl := "00000000" & unsigned( curRedPxl );
+    pxl_tmp := unsigned( curRedPxl ) & "00000000";
+    pxl_tmp := pxl_tmp - curPxl;
+    
+    redPxlOut <= std_logic_vector( pxl_tmp( 12 downto 5 ) ) ;
     
     -- Keep limited range.
 --    if ( unsigned( pxl_tmp ) < 16 ) then
@@ -69,48 +68,26 @@ begin
 --    elsif ( unsigned( pxl_tmp ) > 235 ) then
 --      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
 --    end if;
-    
-    redPxlOut <= pxl_tmp;
   end process;
   
   blueExtProc : process( curBluePxl ) is
-  variable pxl_tmp : std_logic_vector( 7 downto 0 );
+  variable pxl_tmp, curPxl : unsigned( 12 downto 0 );
   begin
-    -- Extend.
-    if ( curBluePxl( 0 ) = '1' ) then
-      pxl_tmp := curBluePxl &  "111";
-    else
-      pxl_tmp := curBluePxl &  "000";
-    end if;
+    curPxl := "00000000" & unsigned( curBluePxl );
+    pxl_tmp := unsigned( curBluePxl ) & "00000000";
+    pxl_tmp := pxl_tmp - curPxl;
     
-    -- Keep limited range.
---    if ( unsigned( pxl_tmp ) < 16 ) then
---      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
---    elsif ( unsigned( pxl_tmp ) > 235 ) then
---      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
---    end if;
-    
-    bluePxlOut <= pxl_tmp;
+    bluePxlOut <= std_logic_vector( pxl_tmp( 12 downto 5 ) ) ;
   end process;
   
   greenExtProc : process( curGreenPxl ) is
-  variable pxl_tmp : std_logic_vector( 7 downto 0 );
+  variable pxl_tmp, curPxl : unsigned( 12 downto 0 );
   begin
-    -- Extend.
-    if ( curGreenPxl( 0 ) = '1' ) then
-      pxl_tmp := curGreenPxl &  "111";
-    else
-      pxl_tmp := curGreenPxl &  "000";
-    end if;
+    curPxl := "00000000" & unsigned( curGreenPxl );
+    pxl_tmp := unsigned( curGreenPxl ) & "00000000";
+    pxl_tmp := pxl_tmp - curPxl;
     
-    -- Keep limited range.
---    if ( unsigned( pxl_tmp ) < 16 ) then
---      pxl_tmp := std_logic_vector( to_unsigned( 16, pxl_tmp'length ) );
---    elsif ( unsigned( pxl_tmp ) > 235 ) then
---      pxl_tmp := std_logic_vector( to_unsigned( 235, pxl_tmp'length ) );
---    end if;
-    
-    greenPxlOut <= pxl_tmp;
+    greenPxlOut <= std_logic_vector( pxl_tmp( 12 downto 5 ) ) ;
   end process;
   
   
