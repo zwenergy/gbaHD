@@ -147,10 +147,12 @@ The optional parameter sets the number of bits to reduce in color space.
 E.g., setting CUTBITS to 2 will reduce the color depth per color from 
 8 bits to 6 bits.
 
+## FPGA Firmware
+You can find the latest bitstream under the folder *bitstream*.
+
 ## TODOs
 
 *README TODO:*
-- Add the rest of the wiring.
 - Describe the overall project.
 - Describe the different modules.
 - Describe pinouts.
