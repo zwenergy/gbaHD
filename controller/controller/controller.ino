@@ -166,7 +166,7 @@ void setup() {
   digitalWrite( SNESLATCH, 0 );
   pinMode( SNESCLK, OUTPUT );
   digitalWrite( SNESCLK, 1 );
-  pinMode( SNESSERIAL, INPUT );
+  pinMode( SNESSERIAL, INPUT_PULLUP );
 
 }
 
