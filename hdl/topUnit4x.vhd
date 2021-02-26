@@ -179,6 +179,8 @@ begin
       newFrameIn => newFrameBuff,
       audioLIn => audioLIn,
       audioRIn => audioRIn,
+      pxlGrid => '0',
+      brightGrid => '0',
       nextLine => nextLineRead,
       curPxl => pxlCntRead,
       redEnc => redEnc,

@@ -147,6 +147,16 @@ The optional parameter sets the number of bits to reduce in color space.
 E.g., setting CUTBITS to 2 will reduce the color depth per color from 
 8 bits to 6 bits.
 
+## Pixel Grid
+The pixel grid feature is currently also in an experimental state. Two
+different pixel grids can be applied, a "bright" pixel grid (AGS feeling) 
+or a "dark" pixel grid (AGB feeling). Right now, the pixel grid can not
+be changed on fly, but has to be set before synthesis (pxlGrid and 
+brightGrid inputs of the top unit). Pixel grid toggle during
+operation should be added soon.
+For the ease of use, you can find a bitstream with each pixel grid in 
+the bitstream folder.
+
 ## FPGA Firmware
 You can find the latest bitstream under the folder *bitstream*.
 

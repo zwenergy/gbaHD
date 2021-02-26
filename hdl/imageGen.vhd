@@ -20,6 +20,9 @@ entity imageGen is
     audioLIn : in std_logic;
     audioRIn : in std_logic;
     
+    pxlGrid : in std_logic;
+    brightGrid : in std_logic;
+    
     nextLine : out std_logic;
     curPxl : out std_logic_vector( 7 downto 0 );
     
@@ -48,9 +51,12 @@ signal pxlCnt : integer range 0 to 239;
 signal pxlCnt4 : integer range 0 to 3;
 signal lineCnt4 : integer range 0 to 3;
 
-signal redPxl : std_logic_vector( 7 downto 0 );
-signal greenPxl : std_logic_vector( 7 downto 0 );
-signal bluePxl : std_logic_vector( 7 downto 0 );
+signal redPxl, gridRed : std_logic_vector( 7 downto 0 );
+signal greenPxl, gridGreen : std_logic_vector( 7 downto 0 );
+signal bluePxl, gridBlue : std_logic_vector( 7 downto 0 );
+
+-- Is a grid pixel?
+signal gridAct : std_logic;
 
 constant gbaVideoXStart : integer := 160;
 constant gbaVideoYStart : integer := 40;
@@ -756,9 +762,12 @@ begin
   ctrl( 1 ) <= vSync;
   ctrl( 0 ) <= hSync;
   
-  redDat <= redPxl when ( drawGBA ='1' ) else borderRed;
-  greenDat <= greenPxl when ( drawGBA ='1' ) else borderGreen;
-  blueDat <= bluePxl when ( drawGBA ='1' ) else borderBlue;
+  redDat <= redPxl when ( drawGBA ='1' and pxlGrid = '0' ) else 
+            gridRed when ( drawGBA ='1' and pxlGrid = '1' ) else borderRed;
+  greenDat <= greenPxl when ( drawGBA ='1' and pxlGrid = '0' ) else 
+              gridGreen when ( drawGBA ='1' and pxlGrid = '1' ) else borderGreen;
+  blueDat <= bluePxl when ( drawGBA ='1' and pxlGrid = '0' ) else 
+             gridBlue when ( drawGBA ='1' and pxlGrid = '1' ) else borderBlue;
   
   --Capture the next pixel.
   getPixel:process( pxlClk ) is
@@ -980,6 +989,24 @@ begin
     r => borderRed,
     g => borderGreen,
     b => borderBlue
+  );
+  
+  -- Grid gen.
+  gridAct <= '1' when pxlCnt4 = 0 or lineCnt4 = 0 else '0';
+    
+  grid : entity work.gridGen( rtl )
+  generic map(
+    gridLineChange => "00011101"
+  )
+  port map(
+    pxlInRed => redPxl,
+    pxlInGreen => greenPxl,
+    pxlInBlue => bluePxl,
+    gridAct => gridAct,
+    brightGrid => brightGrid,
+    pxlOutRed => gridRed,
+    pxlOutGreen => gridGreen,
+    pxlOutBlue => gridBlue
   );
 
 end rtl;
