@@ -18,6 +18,9 @@
 #define SNESCLK A1
 #define SNESSERIAL A2
 
+// Communication port
+#define COMPIN A3
+
 // Polling interval in ms.
 #define POLLINT 10
 
@@ -32,6 +35,8 @@ uint8_t conL;
 uint8_t conR;
 uint8_t conStart;
 uint8_t conSelect;
+
+uint8_t gotCombo;
 
 
 // Read the controller.
@@ -168,11 +173,33 @@ void setup() {
   digitalWrite( SNESCLK, 1 );
   pinMode( SNESSERIAL, INPUT_PULLUP );
 
+  // Communication pin.
+  pinMode( COMPIN, OUTPUT );
+  digitalWrite( COMPIN, 0 );
+
+}
+
+
+void signalCOM() {
+  // Simply write a 1 for 5 us
+  digitalWrite( COMPIN, 1 );
+  delayMicroseconds( 5 );
+  digitalWrite( COMPIN, 0 );
 }
 
 void loop() {
   readController();
   updateGBASignals();
+
+  // Button combination L+R+SELECT+RIGHT send a communcation pulse.
+  if ( conSelect && conL && conR && conDRight ) {
+    if ( gotCombo == 0 ) {
+      signalCOM();
+      gotCombo = 1;
+    }
+  } else if ( gotCombo == 1 ) {
+    gotCombo = 0;
+  }
 
   delay( POLLINT );
 

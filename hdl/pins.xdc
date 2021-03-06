@@ -28,6 +28,9 @@ set_property PACKAGE_PIN P5 [get_ports gbaclk]
 # FPGA IO9
 set_property PACKAGE_PIN E11 [get_ports dclk]
 
+# FPGA AR D4
+set_property PACKAGE_PIN A5 [get_ports controllerMCUIn]
+set_property IOSTANDARD LVCMOS33 [get_ports controllerMCUIn]
 
 # FPGA AR D5
 set_property PACKAGE_PIN B5 [get_ports {bluePxl[1]}]

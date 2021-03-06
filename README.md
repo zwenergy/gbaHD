@@ -114,6 +114,14 @@ and Arduino pins for simulating the button presses.
 | TP3              | D10 |
 | TP2              | D11 |
 
+### Arduino-FPGA connection
+To activate or change the pixel grid, a connection between the Arduino
+and the FPGA board is needed.
+
+|  FPGA Pin  | Arduino Pin |
+|------------|-------------|
+| ARD4       | A3 |
+
 
 ### Power connections
 The GBA and Arduino can be powered via pins of the FPGA board. For the
@@ -150,12 +158,11 @@ E.g., setting CUTBITS to 2 will reduce the color depth per color from
 ## Pixel Grid
 The pixel grid feature is currently also in an experimental state. Two
 different pixel grids can be applied, a "bright" pixel grid (AGS feeling) 
-or a "dark" pixel grid (AGB feeling). Right now, the pixel grid can not
-be changed on fly, but has to be set before synthesis (pxlGrid and 
-brightGrid inputs of the top unit). Pixel grid toggle during
-operation should be added soon.
-For the ease of use, you can find a bitstream with each pixel grid in 
-the bitstream folder.
+or a "dark" pixel grid (AGB feeling). To activate or change the pixel
+grid, the connection between the FPGA board and the Arduino board 
+(see previous sections) needs to be wired. The pixel grid can be changed
+via the button combination L+R+Select+Right.
+
 
 ## FPGA Firmware
 You can find the latest bitstream under the folder *bitstream*.

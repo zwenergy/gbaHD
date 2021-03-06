@@ -19,8 +19,10 @@ entity topUnit4x is
     vsync : in std_logic;
     dclk : in std_logic;
     
+    controllerMCUIn : in std_logic;
+    
     audioLIn : in std_logic;
-    audioRIn : std_logic;
+    audioRIn : in std_logic;
     
     gbaclk : out std_logic;
     
@@ -70,6 +72,9 @@ signal blueSHIFT2 : std_logic;
 
 signal gbaclk_int : std_logic;
 signal gbaclk2x : std_logic;
+
+-- Pixel grid config.
+signal doPxlGrid, bgrid, pxlGridToggle : std_logic;
 
 -- Main reset.
 signal rst : std_logic := '1';
@@ -179,14 +184,48 @@ begin
       newFrameIn => newFrameBuff,
       audioLIn => audioLIn,
       audioRIn => audioRIn,
-      pxlGrid => '0',
-      brightGrid => '0',
+      pxlGrid => doPxlGrid,
+      brightGrid => bgrid,
       nextLine => nextLineRead,
       curPxl => pxlCntRead,
       redEnc => redEnc,
       greenEnc => greenEnc,
       blueEnc => blueEnc
     );
+    
+    -- Controller communication and pixel grid config.
+    controllerComm_inst : entity work.controllerComm( rtl )
+      port map(
+        clk => pxlClk,
+        rst => rst,
+        datIn => controllerMCUIn,
+        pxlGridToggle => pxlGridToggle
+    );
+      
+    pxlGridConfig : process( pxlClk ) is
+    begin
+      if rising_edge( pxlClk ) then
+        if ( rst = '1' ) then
+          doPxlGrid <= '0';
+          bgrid <= '0';
+        else
+          if ( pxlGridToggle = '1' ) then
+            if ( doPxlGrid = '0' ) then
+              doPxlGrid <= '1';
+              bgrid <= '0';
+            elsif ( bgrid = '0' ) then
+              doPxlGrid <= '1';
+              bgrid <= '1';
+            else
+              doPxlGrid <= '0';
+              bgrid <= '0';
+            end if;
+          end if;
+        end if;
+      end if;
+    end process;
+      
+      
     
     -- Serialize.
     redSerM : OSERDESE2
