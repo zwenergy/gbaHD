@@ -155,13 +155,23 @@ The optional parameter sets the number of bits to reduce in color space.
 E.g., setting CUTBITS to 2 will reduce the color depth per color from 
 8 bits to 6 bits.
 
-## Pixel Grid
+## Smoothing and Pixel Grid
+A 2x smoothing and 4x smoothing can be activated. These are slightly adapted
+versions of the Scale2x algorithm. To activate the 2x smoothing, press 
+L+R+Select+Right. To activate 4x smoothing press the button combination again.
+
 The pixel grid feature is currently also in an experimental state. Two
 different pixel grids can be applied, a "bright" pixel grid (AGS feeling) 
-or a "dark" pixel grid (AGB feeling). To activate or change the pixel
-grid, the connection between the FPGA board and the Arduino board 
-(see previous sections) needs to be wired. The pixel grid can be changed
-via the button combination L+R+Select+Right.
+or a "dark" pixel grid (AGB feeling). The pixel grid can be changed
+by pressing the button combination L+R+Select+Right once again.
+
+Overal, by pressing the button combination, the following modes can by cycled:
+
+Normal (4x integer scaling) → 2x Smoothing (2x Smoothing, 2x Integer) → 4x Smoothing → 
+"Dark" Pixel Grid → "Bright" Pixel Grid.
+
+To activate or change one of these two features, the connection between the 
+FPGA board and the Arduino board (see previous sections) needs to be wired.
 
 
 ## FPGA Firmware
