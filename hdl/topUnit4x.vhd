@@ -54,8 +54,10 @@ signal pxlCntCap : std_logic_vector( 7 downto 0 );
 signal lineValidCap : std_logic;
 signal newFrameGBA :std_logic;
 
-signal redBuf, greenBuf, blueBuf : std_logic_vector( 7 downto 0 );
-signal pxlCntRead : std_logic_vector( 7 downto 0 );
+signal prevLineCurPxlRedBuf, prevLineCurPxlGreenBuf, prevLineCurPxlBlueBuf,
+  curLineCurPxlRedBuf, curLineCurPxlGreenBuf, curLineCurPxlBlueBuf,
+  nextLineCurPxlRedBuf, nextLineCurPxlGreenBuf, nextLineCurPxlBlueBuf: std_logic_vector( 7 downto 0 );
+signal pxlCntReadToCache, pxlCntReadToBuffer : std_logic_vector( 7 downto 0 );
 signal nextLineRead : std_logic;
 signal writeReadSameLine : std_logic;
 signal newFrameBuff : std_logic;
@@ -74,7 +76,18 @@ signal gbaclk_int : std_logic;
 signal gbaclk2x : std_logic;
 
 -- Pixel grid config.
-signal doPxlGrid, bgrid, pxlGridToggle : std_logic;
+signal doPxlGrid, bgrid, pxlGridToggle, smooth2x, smooth4x : std_logic;
+
+-- Line cache.
+signal curLineCurPxlRed, curLineCurPxlBlue, curLineCurPxlGreen,
+  curLinePrevPxlRed, curLinePrevPxlBlue, curLinePrevPxlGreen,
+  curLineNextPxlRed, curLineNextPxlBlue, curLineNextPxlGreen,
+  prevLineCurPxlRed, prevLineCurPxlBlue, prevLineCurPxlGreen,
+  prevLinePrevPxlRed, prevLinePrevPxlBlue, prevLinePrevPxlGreen,
+  prevLineNextPxlRed, prevLineNextPxlBlue, prevLineNextPxlGreen,
+  nextLineCurPxlRed, nextLineCurPxlBlue, nextLineCurPxlGreen,
+  nextLinePrevPxlRed, nextLinePrevPxlBlue, nextLinePrevPxlGreen,
+  nextLineNextPxlRed, nextLineNextPxlBlue, nextLineNextPxlGreen : std_logic_vector( 7 downto 0 );
 
 -- Main reset.
 signal rst : std_logic := '1';
@@ -162,14 +175,70 @@ begin
       pxlCntWrite => pxlCntCap,
       pushLine => lineValidCap,
       newFrameIn => newFrameGBA,
-      redOut => redBuf,
-      greenOut => greenBuf,
-      blueOut => blueBuf,
-      pxlCntRead => pxlCntRead,
+      redOutPrev => prevLineCurPxlRedBuf,
+      greenOutPrev => prevLineCurPxlGreenBuf,
+      blueOutPrev => prevLineCurPxlBlueBuf,
+      redOutCur => curLineCurPxlRedBuf,
+      greenOutCur => curLineCurPxlGreenBuf,
+      blueOutCur => curLineCurPxlBlueBuf,
+      redOutNext => nextLineCurPxlRedBuf,
+      greenOutNext => nextLineCurPxlGreenBuf,
+      blueOutNext => nextLineCurPxlBlueBuf,
+      pxlCntRead => pxlCntReadToBuffer,
       pullLine => nextLineRead,
       sameLine => writeReadSameLine,
       newFrameOut => newFrameBuff
     );
+    
+  -- Line cache.
+  lineCache_inst : entity work.lineCache( rtl )
+  port map(
+    clk => pxlClk,
+    rst => rst,
+    curPxlCnt => pxlCntReadToCache,
+    lineChange => nextLineRead,
+    curLineCurPxlRedIn => curLineCurPxlRedBuf,
+    curLineCurPxlGreenIn => curLineCurPxlGreenBuf,
+    curLineCurPxlBlueIn => curLineCurPxlBlueBuf,
+    prevLineCurPxlRedIn => prevLineCurPxlRedBuf,
+    prevLineCurPxlGreenIn => prevLineCurPxlGreenBuf,
+    prevLineCurPxlBlueIn => prevLineCurPxlBlueBuf,
+    nextLineCurPxlRedIn => nextLineCurPxlRedBuf,
+    nextLineCurPxlGreenIn => nextLineCurPxlGreenBuf,
+    nextLineCurPxlBlueIn => nextLineCurPxlBlueBuf,    
+    
+    curLineCurPxlRedOut => curLineCurPxlRed,
+    curLineCurPxlGreenOut => curLineCurPxlGreen,
+    curLineCurPxlBlueOut => curLineCurPxlBlue,
+    prevLineCurPxlRedOut => prevLineCurPxlRed,
+    prevLineCurPxlGreenOut => prevLineCurPxlGreen,
+    prevLineCurPxlBlueOut => prevLineCurPxlBlue,
+    nextLineCurPxlRedOut => nextLineCurPxlRed,
+    nextLineCurPxlGreenOut => nextLineCurPxlGreen,
+    nextLineCurPxlBlueOut => nextLineCurPxlBlue,
+    
+    curLineNextPxlRedOut => curLineNextPxlRed,
+    curLineNextPxlGreenOut => curLineNextPxlGreen,
+    curLineNextPxlBlueOut => curLineNextPxlBlue,
+    prevLineNextPxlRedOut => prevLineNextPxlRed,
+    prevLineNextPxlGreenOut => prevLineNextPxlGreen,
+    prevLineNextPxlBlueOut => prevLineNextPxlBlue,
+    nextLineNextPxlRedOut => nextLineNextPxlRed,
+    nextLineNextPxlGreenOut => nextLineNextPxlGreen,
+    nextLineNextPxlBlueOut => nextLineNextPxlBlue,
+    
+    curLinePrevPxlRedOut => curLinePrevPxlRed,
+    curLinePrevPxlGreenOut => curLinePrevPxlGreen,
+    curLinePrevPxlBlueOut => curLinePrevPxlBlue,
+    prevLinePrevPxlRedOut => prevLinePrevPxlRed,
+    prevLinePrevPxlGreenOut => prevLinePrevPxlGreen,
+    prevLinePrevPxlBlueOut => prevLinePrevPxlBlue,
+    nextLinePrevPxlRedOut => nextLinePrevPxlRed,
+    nextLinePrevPxlGreenOut => nextLinePrevPxlGreen,
+    nextLinePrevPxlBlueOut => nextLinePrevPxlBlue,
+    
+    pxlCntRead => pxlCntReadToBuffer
+  );
       
 
   -- Image gen.
@@ -177,17 +246,47 @@ begin
     port map(
       pxlClk => pxlClk,
       rst => rst,
-      redPxlIn => redBuf,
-      greenPxlIn => greenBuf,
-      bluePxlIn => blueBuf,
+      
+      curLineCurPxlRedIn => curLineCurPxlRed,
+      curLineCurPxlGreenIn => curLineCurPxlGreen,
+      curLineCurPxlBlueIn => curLineCurPxlBlue,
+      prevLineCurPxlRedIn => prevLineCurPxlRed,
+      prevLineCurPxlGreenIn => prevLineCurPxlGreen,
+      prevLineCurPxlBlueIn => prevLineCurPxlBlue,
+      nextLineCurPxlRedIn => nextLineCurPxlRed,
+      nextLineCurPxlGreenIn => nextLineCurPxlGreen,
+      nextLineCurPxlBlueIn => nextLineCurPxlBlue,
+      
+      curLineNextPxlRedIn => curLineNextPxlRed,
+      curLineNextPxlGreenIn => curLineNextPxlGreen,
+      curLineNextPxlBlueIn => curLineNextPxlBlue,
+      prevLineNextPxlRedIn => prevLineNextPxlRed,
+      prevLineNextPxlGreenIn => prevLineNextPxlGreen,
+      prevLineNextPxlBlueIn => prevLineNextPxlBlue,
+      nextLineNextPxlRedIn => nextLineNextPxlRed,
+      nextLineNextPxlGreenIn => nextLineNextPxlGreen,
+      nextLineNextPxlBlueIn => nextLineNextPxlBlue,
+      
+      curLinePrevPxlRedIn => curLinePrevPxlRed,
+      curLinePrevPxlGreenIn => curLinePrevPxlGreen,
+      curLinePrevPxlBlueIn => curLinePrevPxlBlue,
+      prevLinePrevPxlRedIn => prevLinePrevPxlRed,
+      prevLinePrevPxlGreenIn => prevLinePrevPxlGreen,
+      prevLinePrevPxlBlueIn => prevLinePrevPxlBlue,
+      nextLinePrevPxlRedIn => nextLinePrevPxlRed,
+      nextLinePrevPxlGreenIn => nextLinePrevPxlGreen,
+      nextLinePrevPxlBlueIn => nextLinePrevPxlBlue,
+      
       sameLine => writeReadSameLine,
       newFrameIn => newFrameBuff,
       audioLIn => audioLIn,
       audioRIn => audioRIn,
       pxlGrid => doPxlGrid,
       brightGrid => bgrid,
+      smooth2x => smooth2x,
+      smooth4x => smooth4x,
       nextLine => nextLineRead,
-      curPxl => pxlCntRead,
+      curPxl => pxlCntReadToCache,
       redEnc => redEnc,
       greenEnc => greenEnc,
       blueEnc => blueEnc
@@ -208,15 +307,33 @@ begin
         if ( rst = '1' ) then
           doPxlGrid <= '0';
           bgrid <= '0';
+          smooth2x <= '0';
+          smooth4x <= '0';
         else
           if ( pxlGridToggle = '1' ) then
-            if ( doPxlGrid = '0' ) then
+            if ( smooth2x = '0' and smooth4x = '0' and doPxlGrid = '0' ) then
+              smooth2x <= '1';
+              smooth4x <= '0';
+              doPxlGrid <= '0';
+              bgrid <= '0';
+            elsif ( smooth2x = '1' and smooth4x = '0' and doPxlGrid = '0' ) then
+              smooth2x <= '0';
+              smooth4x <= '1';
+              doPxlGrid <= '0';
+              bgrid <= '0';
+            elsif ( smooth2x = '0' and smooth4x = '1' and doPxlGrid = '0' ) then
+              smooth2x <= '0';
+              smooth4x <= '0';
               doPxlGrid <= '1';
               bgrid <= '0';
             elsif ( bgrid = '0' ) then
+              smooth2x <= '0';
+              smooth4x <= '0';
               doPxlGrid <= '1';
               bgrid <= '1';
             else
+              smooth2x <= '0';
+              smooth4x <= '0';
               doPxlGrid <= '0';
               bgrid <= '0';
             end if;

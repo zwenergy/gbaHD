@@ -23,9 +23,16 @@ entity lineBuffer is
     pushLine : in std_logic;
     newFrameIn : in std_logic;
     
-    redOut : out std_logic_vector( 7 downto 0 );
-    greenOut : out std_logic_vector( 7 downto 0 );
-    blueOut :  out std_logic_vector( 7 downto 0 );
+    redOutPrev : out std_logic_vector( 7 downto 0 );
+    greenOutPrev : out std_logic_vector( 7 downto 0 );
+    blueOutPrev :  out std_logic_vector( 7 downto 0 );
+    redOutCur : out std_logic_vector( 7 downto 0 );
+    greenOutCur : out std_logic_vector( 7 downto 0 );
+    blueOutCur :  out std_logic_vector( 7 downto 0 );
+    redOutNext : out std_logic_vector( 7 downto 0 );
+    greenOutNext : out std_logic_vector( 7 downto 0 );
+    blueOutNext :  out std_logic_vector( 7 downto 0 );
+    
     pxlCntRead : in std_logic_vector( 7 downto 0 );
     pullLine : in std_logic;
     
@@ -36,7 +43,7 @@ end lineBuffer;
 
 architecture rtl of lineBuffer is
 signal inCnt : integer range 0 to nrStgs-1;
-signal outCnt : integer range 0 to nrStgs-1;
+signal outCntCur, outCntPrev, outCntNext : integer range 0 to nrStgs-1;
 signal newFrames : std_logic_vector( nrStgs - 1 downto 0 );
 signal wEnMult : std_logic_vector( nrStgs - 1 downto 0 );
 
@@ -60,9 +67,17 @@ begin
     
   end process;
   
-  redOut <= redOut_int( outCnt );
-  greenOut <= greenOut_int( outCnt );
-  blueOut <= blueOut_int( outCnt );
+  redOutPrev <= redOut_int( outCntPrev );
+  greenOutPrev <= greenOut_int( outCntPrev );
+  blueOutPrev <= blueOut_int( outCntPrev );
+  
+  redOutCur <= redOut_int( outCntCur );
+  greenOutCur <= greenOut_int( outCntCur );
+  blueOutCur <= blueOut_int( outCntCur );
+  
+  redOutNext <= redOut_int( outCntNext );
+  greenOutNext <= greenOut_int( outCntNext );
+  blueOutNext <= blueOut_int( outCntNext );
 
   process( clkW ) is
   begin
@@ -87,21 +102,35 @@ begin
   begin
     if ( rising_edge( clkR ) ) then
       if ( rst = '1' ) then
-          outCnt <= 0;
+          outCntPrev <= nrStgs - 1;
+          outCntCur <= 0;
+          outCntNext <= 1;
       else
         if ( pullLine = '1' ) then
-          if ( outCnt = nrStgs - 1 ) then
-            outCnt <= 0;
+          if ( outCntCur = nrStgs - 1 ) then
+            outCntCur <= 0;
           else
-            outCnt <= outCnt + 1;
+            outCntCur <= outCntCur + 1;
+          end if;
+          
+          if ( outCntPrev = nrStgs - 1 ) then
+            outCntPrev <= 0;
+          else
+            outCntPrev <= outCntPrev + 1;
+          end if;
+          
+          if ( outCntNext = nrStgs - 1 ) then
+            outCntNext <= 0;
+          else
+            outCntNext <= outCntNext + 1;
           end if;
         end if;
       end if;
     end if;
   end process;
   
-  sameLine <= '1' when ( inCnt = outCnt ) else '0';
-  newFrameOut <= newFrames( outCnt );
+  sameLine <= '1' when ( inCnt = outCntCur ) else '0';
+  newFrameOut <= newFrames( outCntCur );
   
   
   -- Instantiate buffers.

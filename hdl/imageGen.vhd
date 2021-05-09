@@ -12,9 +12,43 @@ entity imageGen is
   port(
     pxlClk : in std_logic;
     rst : in std_logic;
-    redPxlIn : in std_logic_vector( 7 downto 0 );
-    greenPxlIn : in std_logic_vector( 7 downto 0 );
-    bluePxlIn : in std_logic_vector( 7 downto 0 );
+    
+    prevLinePrevPxlRedIn : in std_logic_vector( 7 downto 0 );
+    prevLinePrevPxlGreenIn : in std_logic_vector( 7 downto 0 );
+    prevLinePrevPxlBlueIn : in std_logic_vector( 7 downto 0 );
+    
+    prevLineCurPxlRedIn : in std_logic_vector( 7 downto 0 );
+    prevLineCurPxlGreenIn : in std_logic_vector( 7 downto 0 );
+    prevLineCurPxlBlueIn : in std_logic_vector( 7 downto 0 );
+    
+    prevLineNextPxlRedIn : in std_logic_vector( 7 downto 0 );
+    prevLineNextPxlGreenIn : in std_logic_vector( 7 downto 0 );
+    prevLineNextPxlBlueIn : in std_logic_vector( 7 downto 0 );
+    
+    curLinePrevPxlRedIn : in std_logic_vector( 7 downto 0 );
+    curLinePrevPxlGreenIn : in std_logic_vector( 7 downto 0 );
+    curLinePrevPxlBlueIn : in std_logic_vector( 7 downto 0 );
+    
+    curLineCurPxlRedIn : in std_logic_vector( 7 downto 0 );
+    curLineCurPxlGreenIn : in std_logic_vector( 7 downto 0 );
+    curLineCurPxlBlueIn : in std_logic_vector( 7 downto 0 );
+    
+    curLineNextPxlRedIn : in std_logic_vector( 7 downto 0 );
+    curLineNextPxlGreenIn : in std_logic_vector( 7 downto 0 );
+    curLineNextPxlBlueIn : in std_logic_vector( 7 downto 0 );
+    
+    nextLinePrevPxlRedIn : in std_logic_vector( 7 downto 0 );
+    nextLinePrevPxlGreenIn : in std_logic_vector( 7 downto 0 );
+    nextLinePrevPxlBlueIn : in std_logic_vector( 7 downto 0 );
+    
+    nextLineCurPxlRedIn : in std_logic_vector( 7 downto 0 );
+    nextLineCurPxlGreenIn : in std_logic_vector( 7 downto 0 );
+    nextLineCurPxlBlueIn : in std_logic_vector( 7 downto 0 );
+    
+    nextLineNextPxlRedIn : in std_logic_vector( 7 downto 0 );
+    nextLineNextPxlGreenIn : in std_logic_vector( 7 downto 0 );
+    nextLineNextPxlBlueIn : in std_logic_vector( 7 downto 0 );
+    
     sameLine : in std_logic;
     newFrameIn : in std_logic;
     audioLIn : in std_logic;
@@ -22,6 +56,9 @@ entity imageGen is
     
     pxlGrid : in std_logic;
     brightGrid : in std_logic;
+    
+    smooth2x : in std_logic;
+    smooth4x : in std_logic;
     
     nextLine : out std_logic;
     curPxl : out std_logic_vector( 7 downto 0 );
@@ -48,7 +85,7 @@ signal draw : std_logic;
 
 signal pxlCnt : integer range 0 to 239;
 
-signal pxlCnt4 : integer range 0 to 3;
+signal pxlCnt4, pxlCnt4_del, pxlCnt4_del2 : integer range 0 to 3;
 signal lineCnt4 : integer range 0 to 3;
 
 signal redPxl, gridRed : std_logic_vector( 7 downto 0 );
@@ -68,6 +105,10 @@ signal blueDat : std_logic_vector( 7 downto 0 );
 signal borderRed, borderGreen, borderBlue : std_logic_vector( 7 downto 0 );
 
 signal redDat4b, greenDat4b, blueDat4b : std_logic_vector( 7 downto 0 );
+
+-- Smoothing
+signal redSmooth, greenSmooth, blueSmooth : std_logic_vector( 7 downto 0 );
+signal xSelSmooth, ySelSmooth : std_logic_vector( 1 downto 0 );
 
 -- Output signals.
 signal redTMDSEnc, greenTMDSEnc, blueTMDSEnc, redTERCEnc, greenTERCEnc, blueTERCEnc, 
@@ -169,12 +210,16 @@ begin
           countYDel <= -25;
           pxlCnt <= 0;
           pxlCnt4 <= 0;
+          pxlCnt4_del <= 0;
+          pxlCnt4_del2 <= 0;
           newFrameInDel <= '0';
           newFrameProcessed <= '0';
       else
         countXDel <= countX;
         countYDel <= countY;
         newFrameInDel <= newFrameIn;
+        pxlCnt4_del <= pxlCnt4;
+        pxlCnt4_del2 <= pxlCnt4_del;
         
         if ( newFrameIn = '1' and newFrameInDel = '0' ) then
           newFrameProcessed <= '0';
@@ -187,7 +232,7 @@ begin
           elsif ( newFrameIn = '1' and newFrameProcessed = '0' ) then
             -- We set it to a line close to the GBA video center, otherwise
             -- we would need a larger frame buffer.
-            countY <= gbaVideoYStart;
+            countY <= gbaVideoYStart - 5;
             newFrameProcessed <= '1';
           else
             countY <= countY + 1;
@@ -215,7 +260,7 @@ begin
             lineCnt4 <= 0;
           elsif ( lineCnt4 = 3 ) then
             lineCnt4 <= 0;
-          else
+          elsif ( countY >= gbaVideoYStart ) then
             lineCnt4 <= lineCnt4 + 1;
           end if;
         end if;
@@ -746,10 +791,10 @@ begin
   greenNoEnc <= guard1;
   
   curPxl <= std_logic_vector( to_unsigned( pxlCnt, curPxl'length ) );
-  nextLine <= '0' when ( countXDel /= maxHor - 2 ) else
+  nextLine <= '0' when ( countXDel /= maxHor - 8 ) else
               '0' when ( sameLine = '1' ) else
               '0' when ( newFrameIn = '1' and newFrameProcessed = '0' ) else
-              '0' when ( countY < 0 ) else
+              '0' when ( countY < gbaVideoYStart ) else
               '1' when ( lineCnt4 = 3 ) else
               '0';
   drawGBA <= '1' when ( countX >= gbaVideoXStart and countX < ( gbaVideoXStart + 960 ) and 
@@ -762,11 +807,14 @@ begin
   ctrl( 1 ) <= vSync;
   ctrl( 0 ) <= hSync;
   
-  redDat <= redPxl when ( drawGBA ='1' and pxlGrid = '0' ) else 
+  redDat <= redPxl when ( drawGBA ='1' and pxlGrid = '0' and smooth2x = '0' and smooth4x = '0' ) else 
+            redSmooth when ( drawGBA ='1' and ( smooth2x = '1' or smooth4x = '1' ) ) else  
             gridRed when ( drawGBA ='1' and pxlGrid = '1' ) else borderRed;
-  greenDat <= greenPxl when ( drawGBA ='1' and pxlGrid = '0' ) else 
+  greenDat <= greenPxl when ( drawGBA ='1' and pxlGrid = '0' and smooth2x = '0' and smooth4x = '0' ) else 
+              greenSmooth when ( drawGBA ='1' and ( smooth2x = '1' or smooth4x = '1' ) ) else  
               gridGreen when ( drawGBA ='1' and pxlGrid = '1' ) else borderGreen;
-  blueDat <= bluePxl when ( drawGBA ='1' and pxlGrid = '0' ) else 
+  blueDat <= bluePxl when ( drawGBA ='1' and pxlGrid = '0' and smooth2x = '0' and smooth4x = '0' ) else 
+             blueSmooth when ( drawGBA ='1' and ( smooth2x = '1' or smooth4x = '1' ) ) else  
              gridBlue when ( drawGBA ='1' and pxlGrid = '1' ) else borderBlue;
   
   --Capture the next pixel.
@@ -778,9 +826,9 @@ begin
         greenPxl <= ( others => '0' );
         bluePxl <= ( others => '0' );
       else
-        redPxl <= redPxlIn;
-        greenPxl <= greenPxlIn;
-        bluePxl <= bluePxlIn;
+        redPxl <= curLineCurPxlRedIn;
+        greenPxl <= curLineCurPxlGreenIn;
+        bluePxl <= curLineCurPxlBlueIn;
       end if;
     end if;
   end process;
@@ -1009,4 +1057,50 @@ begin
     pxlOutBlue => gridBlue
   );
 
+  -- Smoothing.
+  xSelSmooth <= std_logic_vector( to_unsigned( pxlCnt4_del2 , 2) );
+  ySelSmooth <= std_logic_vector( to_unsigned( lineCnt4 , 2) );
+  
+  smooth : entity work.smooth4x( rtl )
+  port map(
+    rTL => prevLinePrevPxlRedIn,
+    gTL => prevLinePrevPxlGreenIn,
+    bTL => prevLinePrevPxlBlueIn,
+    rTM => prevLineCurPxlRedIn,
+    gTM => prevLineCurPxlGreenIn,
+    bTM => prevLineCurPxlBlueIn,
+    rTR => prevLineNextPxlRedIn,
+    gTR => prevLineNextPxlGreenIn,
+    bTR => prevLineNextPxlBlueIn,
+    
+    rCL => curLinePrevPxlRedIn,
+    gCL => curLinePrevPxlGreenIn,
+    bCL => curLinePrevPxlBlueIn,
+    rCM => curLineCurPxlRedIn,
+    gCM => curLineCurPxlGreenIn,
+    bCM => curLineCurPxlBlueIn,
+    rCR => curLineNextPxlRedIn,
+    gCR => curLineNextPxlGreenIn,
+    bCR => curLineNextPxlBlueIn,
+    
+    rBL => NextLinePrevPxlRedIn,
+    gBL => NextLinePrevPxlGreenIn,
+    bBL => NextLinePrevPxlBlueIn,
+    rBM => NextLineCurPxlRedIn,
+    gBM => NextLineCurPxlGreenIn,
+    bBM => NextLineCurPxlBlueIn,
+    rBR => NextLineNextPxlRedIn,
+    gBR => NextLineNextPxlGreenIn,
+    bBR => NextLineNextPxlBlueIn,
+    
+    xSel => xSelSmooth,
+    ySel => ySelSmooth,
+    
+    do4x => smooth4x,
+    
+    rOut => redSmooth,
+    gOut => greenSmooth,
+    bOut => blueSmooth    
+  );
+  
 end rtl;
