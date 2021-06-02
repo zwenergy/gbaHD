@@ -89,7 +89,8 @@ for y in range( borderH ):
   
   print( "    case " + inputX + " is", file = f )
   for x in range( borderW ):
-    if ( x >= leftRight and x < borderW - leftRight ):
+    if ( ( x >= leftRight and x < borderW - leftRight ) and 
+         ( y >= topBottom and y < borderH - topBottom ) ):
       continue
 
     r, g, b = rgbIm.getpixel( ( x, y  )  )
