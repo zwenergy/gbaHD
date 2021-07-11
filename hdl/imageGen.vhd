@@ -54,11 +54,9 @@ entity imageGen is
     audioLIn : in std_logic;
     audioRIn : in std_logic;
     
-    pxlGrid : in std_logic;
-    brightGrid : in std_logic;
-    
-    smooth2x : in std_logic;
-    smooth4x : in std_logic;
+    osdEnable : in std_logic;
+    controllerRXValid : in std_logic;
+    controller : in std_logic_vector(5 downto 0);
     
     nextLine : out std_logic;
     curPxl : out std_logic_vector( 7 downto 0 );
@@ -194,6 +192,9 @@ signal sample128Clk : std_logic;
 constant audioSampleFreq : real := 48.0;
 constant clkFreq : real := 83745.07997655;
 signal statusBits : std_logic_vector( 191 downto 0 );
+
+signal pxlGrid, brightGrid, smooth2x, smooth4x, drawOSD : std_logic;
+signal osdRed, osdGreen, osdBlue : std_logic_vector( 7 downto 0 );
 
 begin
 
@@ -807,13 +808,16 @@ begin
   ctrl( 1 ) <= vSync;
   ctrl( 0 ) <= hSync;
   
-  redDat <= redPxl when ( drawGBA ='1' and pxlGrid = '0' and smooth2x = '0' and smooth4x = '0' ) else 
+  redDat <= osdRed when ( drawOSD ='1' ) else
+            redPxl when ( drawGBA ='1' and pxlGrid = '0' and smooth2x = '0' and smooth4x = '0' ) else 
             redSmooth when ( drawGBA ='1' and ( smooth2x = '1' or smooth4x = '1' ) ) else  
             gridRed when ( drawGBA ='1' and pxlGrid = '1' ) else borderRed;
-  greenDat <= greenPxl when ( drawGBA ='1' and pxlGrid = '0' and smooth2x = '0' and smooth4x = '0' ) else 
+  greenDat <= osdGreen when (drawOSD ='1') else
+              greenPxl when ( drawGBA ='1' and pxlGrid = '0' and smooth2x = '0' and smooth4x = '0' ) else 
               greenSmooth when ( drawGBA ='1' and ( smooth2x = '1' or smooth4x = '1' ) ) else  
               gridGreen when ( drawGBA ='1' and pxlGrid = '1' ) else borderGreen;
-  blueDat <= bluePxl when ( drawGBA ='1' and pxlGrid = '0' and smooth2x = '0' and smooth4x = '0' ) else 
+  blueDat <= osdBlue when (drawOSD ='1') else
+             bluePxl when ( drawGBA ='1' and pxlGrid = '0' and smooth2x = '0' and smooth4x = '0' ) else 
              blueSmooth when ( drawGBA ='1' and ( smooth2x = '1' or smooth4x = '1' ) ) else  
              gridBlue when ( drawGBA ='1' and pxlGrid = '1' ) else borderBlue;
   
@@ -1102,5 +1106,24 @@ begin
     gOut => greenSmooth,
     bOut => blueSmooth    
   );
+  
+  osd_int : entity work.osd( rtl )
+     port map(
+        pxlX => countX,
+        pxlY => countY,
+        controller => controller,
+        osdEnableIn => osdEnable,
+        rxValid => controllerRXValid,
+        clk => pxlClk,
+        rst => rst,
+        osdEnableOut => drawOSD,
+        osdRed => osdRed,
+        osdGreen => osdGreen,
+        osdBlue => osdBlue,
+        smooth2x => smooth2x,
+        smooth4x => smooth4x,
+        pixelGrid => pxlGrid,
+        bgrid => brightGrid
+     );
   
 end rtl;

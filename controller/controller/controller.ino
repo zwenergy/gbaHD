@@ -24,6 +24,20 @@
 // Polling interval in ms.
 #define POLLINT 10
 
+// Some NOP definitions.
+// Yes, this is very pretty. But we do not have code size problems,
+// hence using stupid sequences of NOPs makes it nicely timing 
+// predictable.
+#define NOP1 asm volatile( "nop\n" )
+#define NOP5 NOP1; NOP1; NOP1; NOP1; NOP1
+#define NOP10 NOP5; NOP5
+#define NOP20 NOP10; NOP10
+#define NOP40 NOP20; NOP20
+#define NOP80 NOP40; NOP40
+
+#define WAIT2US NOP20; NOP10; NOP1
+#define WAIT8US NOP80; NOP40; NOP5; NOP1; NOP1; NOP1
+
 // The latest controller state.
 uint8_t conA;
 uint8_t conB;
@@ -175,31 +189,72 @@ void setup() {
 
   // Communication pin.
   pinMode( COMPIN, OUTPUT );
-  digitalWrite( COMPIN, 0 );
-
-}
-
-
-void signalCOM() {
-  // Simply write a 1 for 5 us
   digitalWrite( COMPIN, 1 );
-  delayMicroseconds( 5 );
-  digitalWrite( COMPIN, 0 );
+
 }
+
+void sendPacket( uint8_t p ) {
+  uint8_t curPort = PINC;
+  for ( uint8_t i = 0; i < 8; ++i ) {
+    uint8_t curBit = p & ( 1 << i );
+    if ( curBit ) {
+      curPort &= B11110111;
+      PORTC = curPort;
+      WAIT2US;
+      curPort |= B00001000;
+      PORTC = curPort;
+      WAIT8US;
+    } else {
+      curPort &= B11110111;
+      PORTC = curPort;
+      WAIT8US;
+      curPort |= B00001000;
+      PORTC = curPort;
+      WAIT2US;
+    }
+  }
+}
+
+void noButtons() {
+  conA = 0;
+  conB = 0;
+  conDUp = 0;
+  conDDown = 0;
+  conDLeft = 0;
+  conDRight = 0;
+  conR = 0;
+  conL = 0;
+  conStart = 0;
+  conSelect = 0;
+}
+
+uint8_t showOSD = 0;
 
 void loop() {
   readController();
-  updateGBASignals();
 
   // Button combination L+R+SELECT+RIGHT send a communcation pulse.
   if ( conSelect && conL && conR && conDRight ) {
     if ( gotCombo == 0 ) {
-      signalCOM();
+      showOSD = !showOSD;
       gotCombo = 1;
+
+      // Set the buttons to off once.
+      noButtons();
+      updateGBASignals();
     }
   } else if ( gotCombo == 1 ) {
     gotCombo = 0;
   }
+
+  // Only update GBA signals if the menu is not active.
+  if ( !showOSD ) {
+    updateGBASignals();  
+  }
+
+  // Prepare packet to send.
+  uint8_t packet = ( conB << 7 ) | ( conA << 6 ) | ( conDLeft << 5 ) | ( conDRight << 4 ) | ( conDDown << 3 ) | ( conDUp << 2 ) | ( showOSD << 1 );
+  sendPacket( packet );
 
   delay( POLLINT );
 

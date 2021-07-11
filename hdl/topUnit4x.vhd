@@ -75,8 +75,9 @@ signal blueSHIFT2 : std_logic;
 signal gbaclk_int : std_logic;
 signal gbaclk2x : std_logic;
 
--- Pixel grid config.
-signal doPxlGrid, bgrid, pxlGridToggle, smooth2x, smooth4x : std_logic;
+signal controller : std_logic_vector( 5 downto 0 );
+signal controllerRXValid : std_logic;
+signal osdEnable : std_logic;
 
 -- Line cache.
 signal curLineCurPxlRed, curLineCurPxlBlue, curLineCurPxlGreen,
@@ -281,66 +282,32 @@ begin
       newFrameIn => newFrameBuff,
       audioLIn => audioLIn,
       audioRIn => audioRIn,
-      pxlGrid => doPxlGrid,
-      brightGrid => bgrid,
-      smooth2x => smooth2x,
-      smooth4x => smooth4x,
       nextLine => nextLineRead,
       curPxl => pxlCntReadToCache,
       redEnc => redEnc,
       greenEnc => greenEnc,
-      blueEnc => blueEnc
+      blueEnc => blueEnc,
+      
+      controllerRXValid => controllerRXValid,
+      controller => controller,
+      osdEnable => osdEnable
     );
     
-    -- Controller communication and pixel grid config.
-    controllerComm_inst : entity work.controllerComm( rtl )
+    -- Controller communication.
+    controllerComm_inst : entity work.commTransceiver( rtl )
+      generic map( 
+        packetBits => 8,
+        clkFreq => 83745.07997655,
+        usBit => 10.0
+      )
       port map(
+        serDatIn => controllerMCUIn,
         clk => pxlClk,
         rst => rst,
-        datIn => controllerMCUIn,
-        pxlGridToggle => pxlGridToggle
-    );
-      
-    pxlGridConfig : process( pxlClk ) is
-    begin
-      if rising_edge( pxlClk ) then
-        if ( rst = '1' ) then
-          doPxlGrid <= '0';
-          bgrid <= '0';
-          smooth2x <= '0';
-          smooth4x <= '0';
-        else
-          if ( pxlGridToggle = '1' ) then
-            if ( smooth2x = '0' and smooth4x = '0' and doPxlGrid = '0' ) then
-              smooth2x <= '1';
-              smooth4x <= '0';
-              doPxlGrid <= '0';
-              bgrid <= '0';
-            elsif ( smooth2x = '1' and smooth4x = '0' and doPxlGrid = '0' ) then
-              smooth2x <= '0';
-              smooth4x <= '1';
-              doPxlGrid <= '0';
-              bgrid <= '0';
-            elsif ( smooth2x = '0' and smooth4x = '1' and doPxlGrid = '0' ) then
-              smooth2x <= '0';
-              smooth4x <= '0';
-              doPxlGrid <= '1';
-              bgrid <= '0';
-            elsif ( bgrid = '0' ) then
-              smooth2x <= '0';
-              smooth4x <= '0';
-              doPxlGrid <= '1';
-              bgrid <= '1';
-            else
-              smooth2x <= '0';
-              smooth4x <= '0';
-              doPxlGrid <= '0';
-              bgrid <= '0';
-            end if;
-          end if;
-        end if;
-      end if;
-    end process;
+        controllerOut => controller,
+        osdActive => osdEnable,
+        rxValid => controllerRXValid
+      );
       
       
     
