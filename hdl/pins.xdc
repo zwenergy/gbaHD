@@ -1,3 +1,6 @@
+set_property CFGBVS VCCO [current_design]
+set_property CONFIG_VOLTAGE 3.3 [current_design]
+
 #set_property IOSTANDARD LVCMOS33 [get_ports {key[0]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports led]
 set_property IOSTANDARD LVCMOS33 [get_ports clk]
@@ -24,7 +27,7 @@ set_property PACKAGE_PIN B14 [get_ports {redPxl[0]}]
 # FPGA IO7
 set_property PACKAGE_PIN D3 [get_ports {redPxl[2]}]
 # FPGA IO8
-set_property PACKAGE_PIN P5 [get_ports gbaclk]
+set_property PACKAGE_PIN P5 [get_ports gbaClk]
 # FPGA IO9
 set_property PACKAGE_PIN E11 [get_ports dclk]
 
@@ -84,32 +87,47 @@ set_property IOSTANDARD LVCMOS33 [get_ports audioRIn]
 #set_property IOSTANDARD LVCMOS33 [get_ports adcClkOut]
 #set_property IOSTANDARD LVCMOS33 [get_ports adcnOE]
 
+# GBA pins.
 
 set_property IOSTANDARD LVCMOS33 [get_ports redPxl]
 set_property IOSTANDARD LVCMOS33 [get_ports greenPxl]
 set_property IOSTANDARD LVCMOS33 [get_ports bluePxl]
 set_property IOSTANDARD LVCMOS33 [get_ports dclk]
 set_property IOSTANDARD LVCMOS33 [get_ports vsync]
-set_property IOSTANDARD LVCMOS33 [get_ports gbaclk]
+set_property IOSTANDARD LVCMOS33 [get_ports gbaClk]
 
+# HDMI pins.
 
-set_property -dict {PACKAGE_PIN F4 IOSTANDARD TMDS_33} [get_ports hdmiTxClkN]
-set_property -dict {PACKAGE_PIN G4 IOSTANDARD TMDS_33} [get_ports hdmiTxClkP]
-set_property -dict {PACKAGE_PIN F1 IOSTANDARD TMDS_33} [get_ports hdmiTxBlueN]
-set_property -dict {PACKAGE_PIN G1 IOSTANDARD TMDS_33} [get_ports hdmiTxBlueP]
-set_property -dict {PACKAGE_PIN D2 IOSTANDARD TMDS_33} [get_ports hdmiTxGreenN]
-set_property -dict {PACKAGE_PIN E2 IOSTANDARD TMDS_33} [get_ports hdmiTxGreenP]
-set_property -dict {PACKAGE_PIN C1 IOSTANDARD TMDS_33} [get_ports hdmiTxRedN]
-set_property -dict {PACKAGE_PIN D1 IOSTANDARD TMDS_33} [get_ports hdmiTxRedP]
+set_property IOSTANDARD TMDS_33 [get_ports {hdmiTX[0]}]
+set_property IOSTANDARD TMDS_33 [get_ports {hdmiTXN[0]}]
+set_property PACKAGE_PIN F1 [get_ports {hdmiTXN[0]}]
+set_property PACKAGE_PIN G1 [get_ports {hdmiTX[0]}]
+set_property IOSTANDARD TMDS_33 [get_ports {hdmiTX[1]}]
+set_property IOSTANDARD TMDS_33 [get_ports {hdmiTXN[1]}]
+set_property PACKAGE_PIN D2 [get_ports {hdmiTXN[1]}]
+set_property PACKAGE_PIN E2 [get_ports {hdmiTX[1]}]
+set_property IOSTANDARD TMDS_33 [get_ports {hdmiTX[2]}]
+set_property IOSTANDARD TMDS_33 [get_ports {hdmiTXN[2]}]
+set_property PACKAGE_PIN C1 [get_ports {hdmiTXN[2]}]
+set_property PACKAGE_PIN D1 [get_ports {hdmiTX[2]}]
+set_property IOSTANDARD TMDS_33 [get_ports hdmiClkN]
+set_property IOSTANDARD TMDS_33 [get_ports hdmiClk]
+set_property PACKAGE_PIN F4 [get_ports hdmiClkN]
+set_property PACKAGE_PIN G4 [get_ports hdmiClk]
+set_property IOSTANDARD LVCMOS33 [get_ports hdmiCEC]
+set_property IOSTANDARD LVCMOS33 [get_ports hdmiSDA]
+set_property IOSTANDARD LVCMOS33 [get_ports hdmiSCL]
+set_property IOSTANDARD LVCMOS33 [get_ports hdmiHPD]
+
+set_property PULLTYPE PULLUP [get_ports hdmiCEC]
+set_property PULLTYPE PULLUP [get_ports hdmiSDA]
+set_property PULLTYPE PULLUP [get_ports hdmiSCL]
+set_property PULLTYPE PULLUP [get_ports hdmiHPD]
+
+set_property PACKAGE_PIN E4 [get_ports hdmiCEC]
+set_property PACKAGE_PIN F2 [get_ports hdmiSDA]
+set_property PACKAGE_PIN F3 [get_ports hdmiSCL]
+set_property PACKAGE_PIN D4 [get_ports hdmiHPD]
 
 create_clock -period 10.000 -name clk -waveform {0.000 5.000} [get_ports clk]
 
-
-set_property IOSTANDARD LVCMOS33 [get_ports hdmiTxCEC]
-set_property IOSTANDARD LVCMOS33 [get_ports hdmiTxRSCL]
-set_property IOSTANDARD LVCMOS33 [get_ports hdmiTxRSDA]
-set_property IOSTANDARD LVCMOS33 [get_ports hdmiTxHPD]
-set_property PACKAGE_PIN D4 [get_ports hdmiTxHPD]
-set_property PACKAGE_PIN E4 [get_ports hdmiTxCEC]
-set_property PACKAGE_PIN F2 [get_ports hdmiTxRSDA]
-set_property PACKAGE_PIN F3 [get_ports hdmiTxRSCL]

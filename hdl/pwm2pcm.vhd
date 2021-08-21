@@ -20,7 +20,7 @@ entity pwm2pcm is
     clk : in std_logic;
     rst : in std_logic;
     
-    sample128ClkOut : out std_logic;
+    sampleClkOut : out std_logic;
     datOutL : out std_logic_vector( 15 downto 0 );
     datOutR : out std_logic_vector( 15 downto 0 );
     validOut : out std_logic 
@@ -37,7 +37,7 @@ signal highCntR, lowCntR, diffR : signed( highCntBits - 1 downto 0 );
 signal curSampleL, curSampleR : std_logic_vector( 15 downto 0 );
 signal pwmInL_prev, pwmInR_prev: std_logic;
 
-constant maxCntSampleClk : integer := integer( floor( clkFreq / ( 128.0 * sampleFreq ) ) ) - 1;
+constant maxCntSampleClk : integer := integer( floor( clkFreq / ( sampleFreq ) ) ) - 1;
 constant maxCntSampleClkHalf : integer := maxCntSampleClk / 2;
 signal sampleClkCnt : integer range 0 to maxCntSampleClk;
 
@@ -173,9 +173,9 @@ begin
       else
       
         if ( sampleClkCnt >= maxCntSampleClkHalf ) then
-          sample128ClkOut <= '0';
+          sampleClkOut <= '0';
         else
-          sample128ClkOut <= '1';
+          sampleClkOut <= '1';
         end if;
       
         if ( sampleClkCnt = maxCntSampleClk ) then

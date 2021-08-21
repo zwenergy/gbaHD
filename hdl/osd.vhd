@@ -54,8 +54,8 @@ type tMenuFrame is array( 0 to MENU_HEIGHTFIELDS - 1 ) of tLine;
 signal mainMenu : tMenuFrame := (
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
--- GBAHD v1.1
-( 00, 00, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 22, 27, 36, 27, 00, 00, 00, 00, 00, 00, 00, 00 ),
+-- GBAHD v1.2
+( 00, 00, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 22, 27, 36, 28, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- PXL GRID
@@ -146,8 +146,6 @@ begin
     end if;
   end process;
   
-  osdEnableOut <= nextOSDShow;
-  
   menuArea <= '1' when ( pxlX >= MENUSTARTX and pxlX < MENUENDX and
                          pxlY >= MENUSTARTY and pxlY < MENUENDY ) else '0';
                          
@@ -158,10 +156,6 @@ begin
   char <= mainMenu( fieldYCnt )( fieldXCnt ) when ( curSpace = '0' ) else 0;
   charX <= pxlXCnt when ( menuArea = '1' and curSpace = '0' ) else 0;
   charY <= pxlYCnt when ( menuArea = '1' and curSpace = '0' ) else 0;
-  
-  osdRed <= ( others => ( not charPxl ) ) when ( lineActive = '1' ) else ( others => ( charPxl ) );
-  osdGreen <= ( others => ( not charPxl ) ) when ( lineActive = '1' ) else ( others => ( charPxl ) );
-  osdBlue <= ( others => ( not charPxl ) ) when ( lineActive = '1' ) else ( others => ( charPxl ) );
   
              
   font_inst : entity work.font5x7( rtl )
@@ -254,6 +248,19 @@ begin
               pxlXCnt <= pxlXCnt + 1;
             end if;
           end if;
+        end if;
+        
+        -- Pipeline outgoing signals.
+        osdEnableOut <= nextOSDShow;
+        
+        if ( lineActive = '1' ) then
+          osdRed <= ( others => ( not charPxl ) );
+          osdGreen <= ( others => ( not charPxl ) );
+          osdBlue <= ( others => ( not charPxl ) );
+        else
+          osdRed <= ( others => ( charPxl ) );
+          osdGreen <= ( others => ( charPxl ) );
+          osdBlue <= ( others => ( charPxl ) );
         end if;
         
       end if;
