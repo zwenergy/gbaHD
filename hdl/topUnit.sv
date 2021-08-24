@@ -148,10 +148,11 @@ lineBuffer( .clkW( pxlClk ),
 
 // Line cache.
 wire [7:0] pxlCntReadToCache;
+logic cacheUpdate;
 lineCache( .clk( pxlClk ),
            .rst( rst ),
            .curPxlCnt( pxlCntReadToCache ),
-           .lineChange( pullLineBuff ),
+           .lineChange( cacheUpdate ),
            .curLineCurPxlRedIn( redBuff ),
            .curLineCurPxlGreenIn( greenBuff ),
            .curLineCurPxlBlueIn( blueBuff ),
@@ -240,6 +241,7 @@ imageGenV ( .pxlClk( pxlClk ),
             .osdEnable( osdEnable ),
             
             .nextLine( pullLineBuff ),
+            .cacheUpdate( cacheUpdate ),
             .curPxl( pxlCntReadToCache ),
             .tmds( tmds ),
             .tmdsClk( tmdsClk ) );

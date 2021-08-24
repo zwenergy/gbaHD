@@ -49,6 +49,7 @@ module imageGenV
   input logic [5:0] controller,
   
   output logic nextLine,
+  output logic cacheUpdate,
   output logic [7:0] curPxl,
   
   output logic [2:0] tmds,
@@ -149,6 +150,12 @@ begin
     nextLine <= 1;
   end else begin
     nextLine <= 0;
+  end
+  
+  if ( cxDel == frameWidth - 8 ) begin
+    cacheUpdate <= 1;
+  end else begin
+    cacheUpdate <= 0;
   end
 
   rgb <= { redPxl, greenPxl, bluePxl };
@@ -265,7 +272,6 @@ begin
 end
 
 
-// Pixel grid.
 always_ff @( posedge pxlClk )
 begin
   // Delay the pxlCntScale twice.
@@ -273,7 +279,8 @@ begin
   pxlCntScaleDel2 <= pxlCntScaleDel;
 end
 
-assign gridAct = ( pxlCntScale == 0 || lineCntScale == 0 ? 1 : 0 );
+// Pixel grid.
+assign gridAct = ( pxlCntScaleDel2 == 0 || lineCntScale == 0 ? 1 : 0 );
 
 gridGen #( .gridLineChange( 8'b00011101 ) )
 gridGen ( .pxlInRed( redPxlGBA ),
