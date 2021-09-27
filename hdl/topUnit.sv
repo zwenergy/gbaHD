@@ -42,14 +42,12 @@ MMCME2_BASE
      .CLKFBOUT_MULT_F      (CLKMULT),
      .CLKOUT0_DIVIDE_F     (CLK0DIV),
      .CLKOUT1_DIVIDE       (CLK1DIV),
-     .CLKOUT2_DIVIDE       (CLK2DIV),
      .CLKIN1_PERIOD        (10.000))
 mmc
    (
     .CLKFBOUT            (clkFB),
     .CLKOUT0             (pxlClkx5Int),
     .CLKOUT1             (pxlClkInt),
-    .CLKOUT2             (gbaClkx2Int),
     .CLKFBIN             (clkFB),
     .LOCKED              (clkLock),
     .PWRDWN              (1'b0),
@@ -63,22 +61,14 @@ BUFG clkBuf0
 BUFG clkBuf1
   (.O (pxlClk),
    .I (pxlClkInt));
-   
-BUFG clkBuf2
-  (.O (gbaClkx2),
-   .I (gbaClkx2Int));
 
-
-logic gbaclk_int;
-always_ff @(posedge gbaClkx2)
-begin
-  gbaclk_int <= !gbaclk_int;
-end
-
-assign gbaClk = gbaclk_int;
 
 logic rst;
 assign rst = !clkLock;
+
+// GBA Clock. 532/9375 slower than the HDMI clock.
+fracDiv #( .mul( 532 ), .div( 9375 ), .maxInt( 10000 ) )
+fracDiv ( .clk( pxlClkInt ), .rst( rst ), .clkOut( gbaClk ) );
 
 // GBA capture.
 logic [7:0] redPxlCap, greenPxlCap, bluePxlCap;
@@ -121,7 +111,7 @@ logic [7:0] curLineCurPxlRed, curLineCurPxlBlue, curLineCurPxlGreen,
 logic [5:0] controller;
 logic controllerRXValid;
 
-lineBuffer #( .nrStgs(16) ) 
+lineBuffer #( .nrStgs(20) ) 
 lineBuffer( .clkW( pxlClk ), 
             .clkR( pxlClk ), 
             .rst( rst ), 

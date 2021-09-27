@@ -14,9 +14,9 @@ entity singeLineBuffer is
     clkW : in std_logic;
     clkR : in std_logic;
     rst : in std_logic;
-    wAddr : in std_logic_vector( 7 downto 0 );
+    wAddr : in std_logic_vector( 8 downto 0 );
     wEn : in std_logic;
-    rAddr : in std_logic_vector( 7 downto 0 );
+    rAddr : in std_logic_vector( 8 downto 0 );
     redDataIn : in std_logic_vector( 7 downto 0 );
     blueDataIn : in std_logic_vector( 7 downto 0 );
     greenDataIn : in std_logic_vector( 7 downto 0 );
@@ -37,9 +37,9 @@ signal addrb_int : std_logic_vector( 8 downto 0 );
 begin
 
   wea_int <= ( others => wEn );
-  addra_int <=  "0" & wAddr;
+  addra_int <=  wAddr;
   dina_int <= "00000000" & redDataIn & greenDataIn & blueDataIn;
-  addrb_int <= "0" & rAddr;
+  addrb_int <= rAddr;
   
   bram_inst : BRAM_SDP_MACRO
     generic map(
