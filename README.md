@@ -156,6 +156,7 @@ E.g., setting CUTBITS to 2 will reduce the color depth per color from
 8 bits to 6 bits.
 
 ## OSD, Smoothing and Pixel Grid
+![OSD](./figures/osd.png "OSD")
 A 2x smoothing and 4x smoothing can be activated. These are slightly adapted
 versions of the Scale2x algorithm.
 
