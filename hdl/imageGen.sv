@@ -84,14 +84,14 @@ pwm2pcm( .pwmInL( audioLIn ),
 
 // HDMI.
 logic [23:0] rgb;
-logic [9:0] cy, frameHeight;
-logic [10:0] cx, frameWidth;
+logic [10:0] cy, frameHeight;
+logic [11:0] cx, frameWidth;
 
-logic [10:0] cxDel, setStartX; 
-logic [9:0] cyDel, setStartY;
+logic [11:0] cxDel, setStartX; 
+logic [10:0] cyDel, setStartY;
 logic setStart;
 
-hdmi #( .VIDEO_ID_CODE(4), 
+hdmi #( .VIDEO_ID_CODE(VIDEOID), 
         .DVI_OUTPUT(0), 
         .VIDEO_REFRESH_RATE(60.0), 
         .AUDIO_RATE(48000), 
@@ -115,7 +115,7 @@ hdmi( .clk_pixel_x5(pxlClk5x),
 
 // Create the image.
 logic newFrameInDel, newFrameProcessed;
-logic [1:0] lineCntScale, pxlCntScale, pxlCntScaleDel, pxlCntScaleDel2;
+logic [2:0] lineCntScale, pxlCntScale, pxlCntScaleDel, pxlCntScaleDel2;
 logic drawGBA;
 logic [7:0] redPxlGBA, greenPxlGBA, bluePxlGBA;
 logic [7:0] pxlCntRead;
@@ -129,13 +129,13 @@ logic smooth2x, smooth4x;
 logic gridAct;
 logic brightGrid;
 
-localparam int gbaVideoXStart = 160;
-localparam int gbaVideoYStart = 40;
+localparam int gbaVideoXStart = ( FRAMEWIDTH - ( maxScaleCnt + 1 ) * 240 ) / 2;
+localparam int gbaVideoYStart = ( FRAMEHEIGHT - ( maxScaleCnt + 1 ) * 160 ) / 2;
 
 always_comb
 begin
-  if ( cx >= gbaVideoXStart && cx < ( gbaVideoXStart + 960 ) &&
-       cy >= gbaVideoYStart && cy < ( gbaVideoYStart + 640 ) )
+  if ( cx >= gbaVideoXStart && cx < ( gbaVideoXStart + ( maxScaleCnt + 1 ) * 240 ) &&
+       cy >= gbaVideoYStart && cy < ( gbaVideoYStart + ( maxScaleCnt + 1 ) * 160 ) )
   begin
     drawGBA <= 1;
   end
@@ -146,7 +146,7 @@ begin
   
   if ( cxDel == ( frameWidth - 8 ) && sameLine == 0 && 
        !( newFrameIn == 1 && newFrameProcessed == 0 ) &&
-       cy >= gbaVideoYStart && lineCntScale == 3 ) begin
+       cy >= gbaVideoYStart && lineCntScale == maxScaleCnt ) begin
     nextLine <= 1;
   end else begin
     nextLine <= 0;
@@ -199,8 +199,8 @@ begin
     if ( newFrameIn == 1 && newFrameProcessed == 0 )
     begin
       setStart <= 1;
-      setStartX <= 11'(0);
-      setStartY <= 10'(gbaVideoYStart-2);
+      setStartX <= 12'(0);
+      setStartY <= 11'(gbaVideoYStart-2);
     end
     
     if ( newFrameIn == 1 && newFrameProcessed == 0 && cyDel != cy )
@@ -334,6 +334,10 @@ smooth4x ( .rTL( prevLinePrevPxlRedIn ),
            
            
 // OSD.
+osd #( .smoothEnable( SMOOTHENABLE ),
+       .scale( maxScaleCnt + 1 ),
+       .frameWidth( FRAMEWIDTH ),
+       .frameHeight( FRAMEHEIGHT ) ) 
 osd ( .pxlX( cx ),
       .pxlY( cy ),
       .controller( controller ),
@@ -349,6 +353,7 @@ osd ( .pxlX( cx ),
       .smooth4x( smooth4x ),
       .pixelGrid( pxlGrid ),
       .bgrid( brightGrid ) );
+
       
 // Border gen.
 borderGen #( .xMin( 0 ),

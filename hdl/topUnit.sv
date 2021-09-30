@@ -46,29 +46,29 @@ MMCME2_BASE
 mmc
    (
     .CLKFBOUT            (clkFB),
-    .CLKOUT0             (pxlClkx5Int),
-    .CLKOUT1             (pxlClkInt),
+    .CLKOUT0             (pxlClkx5),
+    .CLKOUT1             (pxlClk),
     .CLKFBIN             (clkFB),
     .LOCKED              (clkLock),
     .PWRDWN              (1'b0),
     .RST                 (1'b0),
     .CLKIN1( clk ) );
 
-BUFG clkBuf0
-  (.O (pxlClkx5),
-   .I (pxlClkx5Int));
+//BUFG clkBuf0
+//  (.O (pxlClkx5),
+//   .I (pxlClkx5Int));
    
-BUFG clkBuf1
-  (.O (pxlClk),
-   .I (pxlClkInt));
+//BUFG clkBuf1
+//  (.O (pxlClk),
+//   .I (pxlClkInt));
 
 
 logic rst;
 assign rst = !clkLock;
 
-// GBA Clock. 532/9375 slower than the HDMI clock.
-fracDiv #( .mul( 532 ), .div( 9375 ), .maxInt( 10000 ) )
-fracDiv ( .clk( pxlClkInt ), .rst( rst ), .clkOut( gbaClk ) );
+// GBA Clock.
+fracDiv #( .mul( GBACLKMUL ), .div( GBACLKDIV ), .maxInt( 10000 ) )
+fracDiv ( .clk( pxlClk ), .rst( rst ), .clkOut( gbaClk ) );
 
 // GBA capture.
 logic [7:0] redPxlCap, greenPxlCap, bluePxlCap;

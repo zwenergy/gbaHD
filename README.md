@@ -157,7 +157,8 @@ E.g., setting CUTBITS to 2 will reduce the color depth per color from
 
 ## OSD, Smoothing and Pixel Grid
 A 2x smoothing and 4x smoothing can be activated. These are slightly adapted
-versions of the Scale2x algorithm.
+versions of the Scale2x algorithm. Note: Smoothing is currently disabled 
+for 1080p resolution.
 
 The pixel grid feature is currently also in an experimental state. Two
 different pixel grids can be applied, a "bright" pixel grid (AGS feeling) 

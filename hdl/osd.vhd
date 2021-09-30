@@ -8,6 +8,12 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.numeric_std.ALL;
 
 entity osd is
+  generic(
+    smoothEnable : integer;
+    scale : integer;
+    frameWidth : integer;
+    frameHeight : integer
+  );
   port(
     pxlX : in integer range 0 to 1665;
     pxlY : in integer range -25 to 1000;
@@ -31,7 +37,6 @@ end entity;
 
 architecture rtl of osd is
 -- Assuming the resolution is 1280x720
-constant SCALE : integer := 4;
 constant MENU_WIDTHFIELDS : integer := 27;
 constant MENU_HEIGHTFIELDS : integer := 6;
 constant CHARWIDTH : integer := 5;
@@ -39,10 +44,10 @@ constant CHARHEIGHT : integer := 7;
 constant CHARSPACE : integer := 1;
 constant FIELDHEIGHT : integer := CHARHEIGHT + CHARSPACE;
 constant FIELDWIDTH : integer := CHARWIDTH + CHARSPACE;
-constant MENUSTARTX : integer := 640 - ( ( ( FIELDWIDTH * MENU_WIDTHFIELDS ) / 2 ) * SCALE );
-constant MENUSTARTY : integer := 360  - ( ( ( FIELDHEIGHT * MENU_HEIGHTFIELDS ) / 2) * SCALE );
-constant MENUENDX : integer := MENUSTARTX + ( FIELDWIDTH * MENU_WIDTHFIELDS * SCALE );
-constant MENUENDY : integer := MENUSTARTY + ( FIELDHEIGHT * MENU_HEIGHTFIELDS * SCALE );
+constant MENUSTARTX : integer := (frameWidth/2) - ( ( ( FIELDWIDTH * MENU_WIDTHFIELDS ) / 2 ) * scale );
+constant MENUSTARTY : integer := (frameHeight/2)  - ( ( ( FIELDHEIGHT * MENU_HEIGHTFIELDS ) / 2) * scale );
+constant MENUENDX : integer := MENUSTARTX + ( FIELDWIDTH * MENU_WIDTHFIELDS * scale );
+constant MENUENDY : integer := MENUSTARTY + ( FIELDHEIGHT * MENU_HEIGHTFIELDS * scale );
 constant PXLGRIDFIELDX : integer := 15;
 constant PXLGRIDFIELDY : integer := 3;
 constant SMOOTHFIELDX : integer := 15;
@@ -54,8 +59,8 @@ type tMenuFrame is array( 0 to MENU_HEIGHTFIELDS - 1 ) of tLine;
 signal mainMenu : tMenuFrame := (
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
--- GBAHD v1.2a
-( 00, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 22, 27, 36, 28, 01, 00, 00, 00, 00, 00, 00, 00, 00 ),
+-- GBAHD v1.3
+( 00, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 22, 27, 36, 29, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- PXL GRID
@@ -319,14 +324,19 @@ begin
                 pixelGrid_int <= '0';
                 bgrid_int <= '0';
                 
-                if ( smooth2x_int = '1' ) then
-                  smooth2x_int <= '0';
-                  smooth4x_int <= '1';
-                elsif ( smooth4x_int = '1' ) then
-                  smooth2x_int <= '0';
-                  smooth4x_int <= '0';
+                if ( smoothEnable = 1 ) then
+                  if ( smooth2x_int = '1' ) then
+                    smooth2x_int <= '0';
+                    smooth4x_int <= '1';
+                  elsif ( smooth4x_int = '1' ) then
+                    smooth2x_int <= '0';
+                    smooth4x_int <= '0';
+                  else
+                    smooth2x_int <= '1';
+                    smooth4x_int <= '0';
+                  end if;
                 else
-                  smooth2x_int <= '1';
+                  smooth2x_int <= '0';
                   smooth4x_int <= '0';
                 end if;
                 
