@@ -2,8 +2,8 @@
 //-- Title: Define Package
 //-- Author: zwenergy
 //-----------------------------------------------------------------------
-`define RES0_1080P
-`define SCALE6
+`define RES0_720P
+`define SCALE4
 
 package definePackage;
   localparam AUDIO_BIT_WIDTH = 16;
@@ -23,6 +23,8 @@ package definePackage;
   localparam GBACLKMUL = 532;
   localparam GBACLKDIV = 9375;
   localparam VIDEOID = 4;
+  localparam AUDIOCLKMUL = 8;
+  localparam AUDIOCLKDIV = 12375;
   `endif
   
   `ifdef RES0_1080P
@@ -40,6 +42,8 @@ package definePackage;
   localparam GBACLKMUL = 266;
   localparam GBACLKDIV = 9375;
   localparam VIDEOID = 16;
+  localparam AUDIOCLKMUL = 4;
+  localparam AUDIOCLKDIV = 12375;
   `endif
   
   

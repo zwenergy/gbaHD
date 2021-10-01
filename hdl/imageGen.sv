@@ -71,7 +71,11 @@ begin
 end
 
 // Audio module.
-pwm2pcm #( .clkFreq( pxlClkFrq ), .sampleFreq( 48.0 ) ) 
+pwm2pcm #( .clkFreq( pxlClkFrq ), 
+           .audioClkMul( AUDIOCLKMUL),
+           .audioClkDiv( AUDIOCLKDIV ),
+           .audioClkMaxInt( AUDIOCLKMUL + AUDIOCLKDIV ),
+           .damp( 2 ) )
 pwm2pcm( .pwmInL( audioLIn ), 
          .pwmInR( audioRIn ), 
          .clk( pxlClk ), 
