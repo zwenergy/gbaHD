@@ -2,8 +2,8 @@
 //-- Title: Define Package
 //-- Author: zwenergy
 //-----------------------------------------------------------------------
-`define RES0_720P
-`define SCALE4
+`define RES0_1080P
+`define SCALE6
 
 package definePackage;
   localparam AUDIO_BIT_WIDTH = 16;

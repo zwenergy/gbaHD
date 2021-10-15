@@ -12,9 +12,7 @@ use IEEE.math_real.ALL;
 entity pwm2pcm is
   generic (
     clkFreq : real; -- clk freq. in kHz
-    audioClkMul : integer;
-    audioClkDiv : integer;
-    audioClkMaxInt : integer;
+    sampleFreq : real;
     damp : integer
   );
   port (
@@ -31,24 +29,27 @@ entity pwm2pcm is
 end pwm2pcm;
 
 architecture rtl of pwm2pcm is
+constant maxCntClk : integer := integer( ceil( clkFreq / sampleFreq ) ) - 1;
 constant maxHighCnt : integer := integer( ceil( clkFreq / 65.5360 ) ) - 1;
 constant highCntBits : integer := integer( ceil( log2( real( maxHighCnt ) ) ) ) + 1;
+signal cnt : integer range 0 to maxCntClk;
 signal highCntL, lowCntL, diffL : unsigned( highCntBits - 1 downto 0 );
 signal highCntR, lowCntR, diffR : unsigned( highCntBits - 1 downto 0 );
 signal curSampleL, curSampleR : std_logic_vector( 15 downto 0 );
 signal pwmInL_prev, pwmInR_prev: std_logic;
 
+constant maxCntSampleClk : integer := integer( floor( clkFreq / ( sampleFreq ) ) ) - 1;
+constant maxCntSampleClkHalf : integer := maxCntSampleClk / 2;
+signal sampleClkCnt : integer range 0 to maxCntSampleClk;
+
 constant minCycles : integer := 5;
 signal pwmL_int_buf, pwmR_int_buf : std_logic_vector( 0 to minCycles - 1 );
 signal pwmL_int, pwmR_int : std_logic;
 
-signal clkOut_int, clkOut_int_prev : std_logic;
 begin
 
   datOutL <= curSampleL;
   datOutR <= curSampleR;
-  
-  sampleClkOut <= clkOut_int;
   
   -- Filter
   process( clk ) is
@@ -152,34 +153,43 @@ begin
     end if;
   end process;
 
-  -- Audio Clk Output.
-  fracDivInst : entity work.fracDiv( rtl )
-    generic map(
-      mul => audioClkMul,
-      div => audioClkDiv,
-      maxInt => audioClkMaxInt
-    )
-    port map(
-      clk => clk,
-      rst => rst,
-      clkOut => clkOut_int
-    );
-    
-  -- Valid out.
   process( clk ) is
   begin
-    if rising_edge( clk ) then
+    if ( rising_edge( clk ) ) then
       if ( rst = '1' ) then
+        cnt <= 0;
         validOut <= '0';
-        clkOut_int_prev <= '0';
       else
-        clkOut_int_prev <= clkOut_int;
-        if ( clkOut_int = '1' and clkOut_int_prev = '0' ) then
-          validOut <= '1';
-        else
+        if ( cnt < maxCntClk ) then
+          cnt <= cnt + 1;
           validOut <= '0';
+        else
+          cnt <= 0;
+          validOut <= '1';
         end if;
       end if;
+    end if;
+  end process;
+  
+  process( clk ) is
+  begin
+    if ( rising_edge( clk ) ) then
+      if ( rst = '1' ) then
+        sampleClkCnt <= 0;
+      else
+      
+        if ( sampleClkCnt >= maxCntSampleClkHalf ) then
+          sampleClkOut <= '0';
+        else
+          sampleClkOut <= '1';
+        end if;
+      
+        if ( sampleClkCnt = maxCntSampleClk ) then
+          sampleClkCnt <= 0;
+        else 
+          sampleClkCnt <= sampleClkCnt + 1;
+        end if;
+      end if;      
     end if;
   end process;
 

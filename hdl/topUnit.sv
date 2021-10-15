@@ -46,21 +46,21 @@ MMCME2_BASE
 mmc
    (
     .CLKFBOUT            (clkFB),
-    .CLKOUT0             (pxlClkx5),
-    .CLKOUT1             (pxlClk),
+    .CLKOUT0             (pxlClkx5Int),
+    .CLKOUT1             (pxlClkInt),
     .CLKFBIN             (clkFB),
     .LOCKED              (clkLock),
     .PWRDWN              (1'b0),
     .RST                 (1'b0),
     .CLKIN1( clk ) );
 
-//BUFG clkBuf0
-//  (.O (pxlClkx5),
-//   .I (pxlClkx5Int));
+BUFG clkBuf0
+  (.O (pxlClkx5),
+   .I (pxlClkx5Int));
    
-//BUFG clkBuf1
-//  (.O (pxlClk),
-//   .I (pxlClkInt));
+BUFG clkBuf1
+  (.O (pxlClk),
+   .I (pxlClkInt));
 
 
 logic rst;
