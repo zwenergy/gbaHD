@@ -53,14 +53,16 @@ signal syncCnt : integer range 0 to integer(ceil(325000.0/clkPeriodNS));
 constant minSyncCnt : integer := integer(ceil(136500.0/clkPeriodNS));
 begin
 
+  -- Thanks to ManCloud for improving my stupid color extension :)
+  
   redExtProc : process( curRedPxl ) is
-  variable pxl_tmp, curPxl : unsigned( 12 downto 0 );
+  variable pxl_tmp, curPxl : unsigned( 7 downto 0 );
   begin
-    curPxl := "00000000" & unsigned( curRedPxl );
-    pxl_tmp := unsigned( curRedPxl ) & "00000000";
-    pxl_tmp := pxl_tmp - curPxl;
+    curPxl := unsigned( curRedPxl ) & "000";
+    pxl_tmp := "00000" & unsigned( curRedPxl( 4 downto 2 ) );
+    pxl_tmp := pxl_tmp + curPxl;
     
-    redPxlOut <= std_logic_vector( pxl_tmp( 12 downto 5 ) ) ;
+    redPxlOut <= std_logic_vector( pxl_tmp ) ;
     
     -- Keep limited range.
 --    if ( unsigned( pxl_tmp ) < 16 ) then
@@ -71,23 +73,23 @@ begin
   end process;
   
   blueExtProc : process( curBluePxl ) is
-  variable pxl_tmp, curPxl : unsigned( 12 downto 0 );
+  variable pxl_tmp, curPxl : unsigned( 7 downto 0 );
   begin
-    curPxl := "00000000" & unsigned( curBluePxl );
-    pxl_tmp := unsigned( curBluePxl ) & "00000000";
-    pxl_tmp := pxl_tmp - curPxl;
+    curPxl := unsigned( curBluePxl ) & "000";
+    pxl_tmp := "00000" & unsigned( curBluePxl( 4 downto 2 ) );
+    pxl_tmp := pxl_tmp + curPxl;
     
-    bluePxlOut <= std_logic_vector( pxl_tmp( 12 downto 5 ) ) ;
+    bluePxlOut <= std_logic_vector( pxl_tmp ) ;
   end process;
   
   greenExtProc : process( curGreenPxl ) is
-  variable pxl_tmp, curPxl : unsigned( 12 downto 0 );
+  variable pxl_tmp, curPxl : unsigned( 7 downto 0 );
   begin
-    curPxl := "00000000" & unsigned( curGreenPxl );
-    pxl_tmp := unsigned( curGreenPxl ) & "00000000";
-    pxl_tmp := pxl_tmp - curPxl;
+    curPxl := unsigned( curGreenPxl ) & "000";
+    pxl_tmp := "00000" & unsigned( curGreenPxl( 4 downto 2 ) );
+    pxl_tmp := pxl_tmp + curPxl;
     
-    greenPxlOut <= std_logic_vector( pxl_tmp( 12 downto 5 ) ) ;
+    greenPxlOut <= std_logic_vector( pxl_tmp ) ;
   end process;
   
   
