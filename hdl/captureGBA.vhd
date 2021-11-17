@@ -21,6 +21,8 @@ entity captureGBA is
     vsync : in std_logic;
     dclk : in std_logic;
     
+    colorMode : in std_logic;
+    
     redPxlOut : out std_logic_vector( 7 downto 0 );
     greenPxlOut : out std_logic_vector( 7 downto 0 );
     bluePxlOut : out std_logic_vector( 7 downto 0 );
@@ -51,6 +53,9 @@ signal vsync_int : std_logic;
 signal vsync_del : std_logic;
 signal syncCnt : integer range 0 to integer(ceil(325000.0/clkPeriodNS));
 constant minSyncCnt : integer := integer(ceil(136500.0/clkPeriodNS));
+
+-- GBA Color Correction
+signal redGBACol, greenGBACol, blueGBACol, redExt, greenExt, blueExt : std_logic_vector( 7 downto 0 );
 begin
 
   -- Thanks to ManCloud for improving my stupid color extension :)
@@ -62,7 +67,7 @@ begin
     pxl_tmp := "00000" & unsigned( curRedPxl( 4 downto 2 ) );
     pxl_tmp := pxl_tmp + curPxl;
     
-    redPxlOut <= std_logic_vector( pxl_tmp ) ;
+    redExt <= std_logic_vector( pxl_tmp ) ;
     
     -- Keep limited range.
 --    if ( unsigned( pxl_tmp ) < 16 ) then
@@ -79,7 +84,7 @@ begin
     pxl_tmp := "00000" & unsigned( curBluePxl( 4 downto 2 ) );
     pxl_tmp := pxl_tmp + curPxl;
     
-    bluePxlOut <= std_logic_vector( pxl_tmp ) ;
+    blueExt <= std_logic_vector( pxl_tmp ) ;
   end process;
   
   greenExtProc : process( curGreenPxl ) is
@@ -89,13 +94,59 @@ begin
     pxl_tmp := "00000" & unsigned( curGreenPxl( 4 downto 2 ) );
     pxl_tmp := pxl_tmp + curPxl;
     
-    greenPxlOut <= std_logic_vector( pxl_tmp ) ;
+    greenExt <= std_logic_vector( pxl_tmp ) ;
+  end process;
+  
+  -- GBA color correction.
+  colorCorrection : entity work.gbaColorCorr( rtl )
+    port map(
+      gbaRed => curRedPxl,
+      gbaGreen => curGreenPxl,
+      gbaBlue => curBluePxl,
+      rGBACol => redGBACol,
+      gGBACol => greenGBACol,
+      bGBACol => blueGBACol
+    );
+    
+  -- Choose color mode.
+  process( clk ) is
+  begin
+    if rising_edge( clk ) then
+      if ( colorMode = '1' ) then
+        redPxlOut <= redGBACol;
+        greenPxlOut <= greenGBACol;
+        bluePxlOut <= blueGBACol;
+        
+      else
+        redPxlOut <= redExt;
+        greenPxlOut <= greenExt;
+        bluePxlOut <= blueExt;
+        
+      end if;
+      
+      pxlCnt <= std_logic_vector( to_unsigned( prevCntX, pxlCnt'length ) );
+      
+      -- Since the very first bit is a start bit, we have to count until 239
+      if ( ( newPxl = '1' ) and ( prevCntX = 239 ) ) then
+        validLine <= '1';
+      else
+        validLine <= '0';
+      end if;
+      
+      if ( prevCntY = 0 ) then
+        newFrame <= '1';
+      else
+        newFrame <= '0';
+      end if;
+
+      validPxlOut <= newPxl;
+      
+    end if;
   end process;
   
   
   dclkRise <= '1' when ( dclk_int = '1' and dclk_prev = '0' ) else '0';
-  newFrame <= '1' when ( prevCntY = 0 ) else '0';
-  validPxlOut <= newPxl;
+  
   
   vsyncRise <= '1' when ( vsync_int = '1' and vsync_del = '0' ) else '0';
   vsyncFall <= '1' when ( vsync_int = '0' and vsync_del = '1' ) else '0';
@@ -165,10 +216,6 @@ begin
     end if;
   end process;
   
-  pxlCnt <= std_logic_vector( to_unsigned( prevCntX, pxlCnt'length ) );
-  
-  -- Since the very first bit is a start bit, we have to count until 239
-  validLine <= '1' when ( newPxl = '1' ) and ( prevCntX = 239 ) else '0';
  
 
 end rtl;

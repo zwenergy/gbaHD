@@ -31,14 +31,15 @@ entity osd is
     smooth2x : out std_logic;
     smooth4x : out std_logic;
     pixelGrid : out std_logic;
-    bgrid : out std_logic
+    bgrid : out std_logic;
+    colorMode : out std_logic
   );
 end entity;
 
 architecture rtl of osd is
 -- Assuming the resolution is 1280x720
 constant MENU_WIDTHFIELDS : integer := 27;
-constant MENU_HEIGHTFIELDS : integer := 6;
+constant MENU_HEIGHTFIELDS : integer := 7;
 constant CHARWIDTH : integer := 5;
 constant CHARHEIGHT : integer := 7;
 constant CHARSPACE : integer := 1;
@@ -52,6 +53,8 @@ constant PXLGRIDFIELDX : integer := 15;
 constant PXLGRIDFIELDY : integer := 3;
 constant SMOOTHFIELDX : integer := 15;
 constant SMOOTHFIELDY : integer := 4;
+constant COLORFIELDX : integer := 15;
+constant COLORFIELDY : integer := 5;
 
 type tLine  is array( 0 to MENU_WIDTHFIELDS - 1 ) of integer range 0 to 37;
 type tMenuFrame is array( 0 to MENU_HEIGHTFIELDS - 1 ) of tLine;
@@ -59,14 +62,16 @@ type tMenuFrame is array( 0 to MENU_HEIGHTFIELDS - 1 ) of tLine;
 signal mainMenu : tMenuFrame := (
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
--- GBAHD v1.3A
-( 00, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 22, 27, 36, 29, 01, 00, 00, 00, 00, 00, 00, 00, 00 ),
+-- GBAHD v1.3B
+( 00, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 22, 27, 36, 29, 02, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- PXL GRID
 ( 00, 16, 24, 12, 00, 07, 18, 09, 04, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- Smoothing
 ( 00, 19, 13, 15, 15, 20, 08, 09, 14, 07, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
+-- Color
+( 00, 03, 15, 12, 15, 18, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 )
 );
@@ -89,6 +94,9 @@ signal charPxl : std_logic;
 
 signal scaleCntX, scaleCntY : integer range 0 to SCALE - 1;
 
+-- 0: Normal, 1: GBA mode
+signal colorMode_int : std_logic;
+
 signal smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int : std_logic;
 signal controller_int, controller_prev : std_logic_vector( 5 downto 0 );
 signal lineSelected : integer range 0 to MENU_HEIGHTFIELDS - 1;
@@ -100,9 +108,10 @@ begin
   smooth4x <= smooth4x_int;
   pixelGrid <= pixelGrid_int;
   bgrid <= bgrid_int;
+  colorMode <= colorMode_int;
   
   -- Update menu.
-  process( smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int ) is
+  process( smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int, colorMode_int ) is
   begin
     if ( smooth2x_int = '1' ) then
       -- 2X
@@ -148,6 +157,24 @@ begin
       mainMenu( PXLGRIDFIELDY )( PXLGRIDFIELDX + 3 ) <= 0;
       mainMenu( PXLGRIDFIELDY )( PXLGRIDFIELDX + 4 ) <= 0;
       mainMenu( PXLGRIDFIELDY )( PXLGRIDFIELDX + 5 ) <= 0;
+    end if;
+    
+    if ( colorMode_int = '0' ) then
+      -- Normal
+      mainMenu( COLORFIELDY )( COLORFIELDX ) <= 14;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 1 ) <= 15;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 2 ) <= 18;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 3 ) <= 13;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 4 ) <= 1;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 5 ) <= 12;
+    else
+    --GBA
+      mainMenu( COLORFIELDY )( COLORFIELDX ) <= 7;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 1 ) <= 2;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 2 ) <= 1;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 3 ) <= 0;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 4 ) <= 0;
+      mainMenu( COLORFIELDY )( COLORFIELDX + 5 ) <= 0;
     end if;
   end process;
   
@@ -281,6 +308,7 @@ begin
         smooth4x_int <= '0';
         pixelGrid_int <= '0';
         bgrid_int <= '0';
+        colorMode_int <= '0';
         lineSelected <= 3;
       else
       
@@ -294,7 +322,7 @@ begin
           
           -- Down
           if ( controller_int( 1 ) = '1' and controller_prev( 1 ) = '0' ) then
-            if ( lineSelected < 4 ) then
+            if ( lineSelected < 5 ) then
               lineSelected <= lineSelected + 1;
             end if;
           end if;
@@ -340,11 +368,17 @@ begin
                   smooth4x_int <= '0';
                 end if;
                 
+                
+              -- Color  
+              when 5 =>                
+                colorMode_int <= not colorMode_int;
+              
               when others =>
                 pixelGrid_int <= '0';
                 bgrid_int <= '0';
                 smooth4x_int <= '0';
                 smooth2x_int <= '0';
+                colorMode_int <= '0';
             end case;
           end if;
         end if;

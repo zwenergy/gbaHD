@@ -48,6 +48,8 @@ module imageGenV
   input logic controllerRXValid,
   input logic [5:0] controller,
   
+  output logic colorMode,
+  
   output logic nextLine,
   output logic cacheUpdate,
   output logic [7:0] curPxl,
@@ -354,7 +356,8 @@ osd ( .pxlX( cx ),
       .smooth2x( smooth2x ),
       .smooth4x( smooth4x ),
       .pixelGrid( pxlGrid ),
-      .bgrid( brightGrid ) );
+      .bgrid( brightGrid ),
+      .colorMode( colorMode ) );
 
       
 // Border gen.

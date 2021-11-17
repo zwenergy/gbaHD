@@ -75,6 +75,7 @@ logic [7:0] redPxlCap, greenPxlCap, bluePxlCap;
 logic validCap;
 logic [7:0] pxlCntCap;
 logic validLineCap, newFrameCap;
+logic colorMode;
 captureGBA #( .clkPeriodNS( pxlClkPeriod ) ) 
 captureGBA( .clk( pxlClk ), 
             .rst( rst ), 
@@ -82,7 +83,8 @@ captureGBA( .clk( pxlClk ),
             .bluePxl( bluePxl ), 
             .greenPxl( greenPxl ),
             .vsync( vsync ), 
-            .dclk( dclk ), 
+            .dclk( dclk ),
+            .colorMode( colorMode ),
             .redPxlOut( redPxlCap ),
             .greenPxlOut( greenPxlCap ), 
             .bluePxlOut( bluePxlCap ), 
@@ -228,6 +230,7 @@ imageGenV ( .pxlClk( pxlClk ),
             
             .controllerRXValid( controllerRXValid ),
             .controller( controller ),
+            .colorMode( colorMode ),
             .osdEnable( osdEnable ),
             
             .nextLine( pullLineBuff ),
