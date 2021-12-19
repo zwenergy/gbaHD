@@ -27,9 +27,21 @@ module topUnit
   input hdmiCEC,
   inout hdmiSDA,
   inout hdmiSCL,
-  input hdmiHPD
+  input hdmiHPD,
+  
+  output enable3V3
 );
 
+
+// Pull 3V3_EN line low to enable them.
+assign enable3v3 = 0;
+
+// Reconf.
+wire framerate, drdy, locked, busy, dwe, den, dclkDRP, rstMMCM, busyDRP;
+wire [15:0] doSig, diSig;
+wire [6:0] daddr;
+logic doSwitch;
+logic [1:0] stateSel;
 
 // Generate clocks.
 wire pxlClk, pxlClkInt, pxlClkx5, pxlClkx5Int, gbaClkx2, gbaClkx2Int, 
@@ -37,7 +49,9 @@ wire pxlClk, pxlClkInt, pxlClkx5, pxlClkx5Int, gbaClkx2, gbaClkx2Int,
 wire [2:0] tmds;
 wire tmdsClk;
 
-MMCME2_BASE
+assign locked = clkLock;
+
+MMCME2_ADV
   #( .DIVCLK_DIVIDE        (CLKDIV),
      .CLKFBOUT_MULT_F      (CLKMULT),
      .CLKOUT0_DIVIDE_F     (CLK0DIV),
@@ -51,8 +65,15 @@ mmc
     .CLKFBIN             (clkFB),
     .LOCKED              (clkLock),
     .PWRDWN              (1'b0),
-    .RST                 (1'b0),
-    .CLKIN1( clk ) );
+    .RST                 (rstMMCM),
+    .CLKIN1( clk ),
+    .DADDR( daddr ),
+    .DI( diSig ),
+    .DO( doSig ),
+    .DWE( dwe ),
+    .DEN( den ),
+    .DCLK( dclkDRP ),
+    .DRDY( drdy ) );
 
 BUFG clkBuf0
   (.O (pxlClkx5),
@@ -62,9 +83,80 @@ BUFG clkBuf1
   (.O (pxlClk),
    .I (pxlClkInt));
 
-
+// Reset generate.
+logic [9:0] rstCnt = 10'(0);
 logic rst;
-assign rst = !clkLock;
+
+assign rst = ( rstCnt < 1000 ? 1 : 0 );
+
+always_ff @( posedge pxlClk )
+begin
+  if ( rstCnt < 1000 ) begin
+    rstCnt = rstCnt + 1;    
+  end
+end
+
+drp drp_inst
+  (
+    .doSwitch( doSwitch ),
+    .drdy( drdy ),
+    .locked( locked ),
+    .stateSel( stateSel ),
+    .dwe( dwe ),
+    .den( den ),
+    .dclk( dclkDRP ),
+    .rstMMCM( rstMMCM ),
+    .doSig( doSig ),
+    .diSig( diSig ),
+    .daddr( daddr ),
+    .clk( clk ),
+    .rst( 1'b0 ),
+    .busy( busyDRP )
+  );
+
+// Logic to start MMCM reconf.
+logic framerate_sync;
+always_ff @( posedge pxlClk )
+begin
+  framerate_sync <= framerate;
+end
+
+
+logic framerateCDC1, framerateCDC2;
+logic prevFramerate;
+always_ff @( posedge clk )
+begin
+  if ( rst ) begin
+    prevFramerate <= 0;
+    framerateCDC1 <= 0;
+    framerateCDC2 <= 0;
+  end else begin
+    framerateCDC1 <= framerate_sync;
+    framerateCDC2 <= framerateCDC1;
+  
+    prevFramerate <= framerateCDC2;
+    
+    if ( prevFramerate != framerateCDC2 ) begin
+      doSwitch <= 1;
+      if ( framerateCDC2 == 0 ) begin
+      `ifdef RES0_720P
+        stateSel <= 2'b00;
+      `else
+        stateSel <= 2'b10;
+      `endif
+      end else begin
+      `ifdef RES0_720P
+        stateSel <= 2'b01;
+      `else
+        stateSel <= 2'b11;
+      `endif
+      end
+    end else begin
+      doSwitch <= 0;
+    end
+  end
+end
+
 
 // GBA Clock.
 fracDiv #( .mul( GBACLKMUL ), .div( GBACLKDIV ), .maxInt( 10000 ) )
@@ -76,7 +168,7 @@ logic validCap;
 logic [7:0] pxlCntCap;
 logic validLineCap, newFrameCap;
 logic colorMode;
-captureGBA #( .clkPeriodNS( pxlClkPeriod ) ) 
+captureGBA #( .clkPeriodNS( pxlClkPeriod_60hz ) ) 
 captureGBA( .clk( pxlClk ), 
             .rst( rst ), 
             .redPxl( redPxl ), 
@@ -231,6 +323,7 @@ imageGenV ( .pxlClk( pxlClk ),
             .controllerRXValid( controllerRXValid ),
             .controller( controller ),
             .colorMode( colorMode ),
+            .framerate( framerate ),
             .osdEnable( osdEnable ),
             
             .nextLine( pullLineBuff ),
@@ -242,11 +335,15 @@ imageGenV ( .pxlClk( pxlClk ),
 
 // Controller communication.
 commTransceiver #( .packetBits( 8 ),
-                   .clkFreq( pxlClkFrq ),
+                   .clkFreq0( pxlClkFrq_60hz ),
+                   .clkFreq1( pxlClkFrq_59hz ),
+                   .clkFreqMax( pxlClkFrq_60hz ),
                    .usBit( 10.0 ) )
 commTransceiver ( .serDatIn( controllerMCUIn ),
                   .clk( pxlClk ),
                   .rst( rst ),
+                  //.clkFreq( framerate ),
+                  .clkFreq( 0 ),
                   .controllerOut( controller ),
                   .osdActive( osdEnable ),
                   .rxValid( controllerRXValid ) );

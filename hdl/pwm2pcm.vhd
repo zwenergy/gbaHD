@@ -11,7 +11,9 @@ use IEEE.math_real.ALL;
 
 entity pwm2pcm is
   generic (
-    clkFreq : real; -- clk freq. in kHz
+    clkFreq0 : real; -- clk freq. in kHz
+    clkFreq1 : real; -- clk freq. in kHz
+    clkFreqMax : real; -- clk freq. in kHz
     sampleFreq : real;
     damp : integer
   );
@@ -21,6 +23,9 @@ entity pwm2pcm is
     clk : in std_logic;
     rst : in std_logic;
     
+    -- Corresponding to the generics.
+    clkFreq : in std_logic;
+    
     sampleClkOut : out std_logic;
     datOutL : out std_logic_vector( 15 downto 0 );
     datOutR : out std_logic_vector( 15 downto 0 );
@@ -29,8 +34,8 @@ entity pwm2pcm is
 end pwm2pcm;
 
 architecture rtl of pwm2pcm is
-constant maxCntClk : integer := integer( ceil( clkFreq / sampleFreq ) ) - 1;
-constant maxHighCnt : integer := integer( ceil( clkFreq / 65.5360 ) ) - 1;
+constant maxCntClk : integer := integer( ceil( clkFreqMax / sampleFreq ) ) - 1;
+constant maxHighCnt : integer := integer( ceil( clkFreqMax / 65.5360 ) ) - 1;
 constant highCntBits : integer := integer( ceil( log2( real( maxHighCnt ) ) ) ) + 1;
 signal cnt : integer range 0 to maxCntClk;
 signal highCntL, lowCntL, diffL : unsigned( highCntBits - 1 downto 0 );
@@ -38,9 +43,12 @@ signal highCntR, lowCntR, diffR : unsigned( highCntBits - 1 downto 0 );
 signal curSampleL, curSampleR : std_logic_vector( 15 downto 0 );
 signal pwmInL_prev, pwmInR_prev: std_logic;
 
-constant maxCntSampleClk : integer := integer( floor( clkFreq / ( sampleFreq ) ) ) - 1;
-constant maxCntSampleClkHalf : integer := maxCntSampleClk / 2;
-signal sampleClkCnt : integer range 0 to maxCntSampleClk;
+constant maxCntSampleClk0 : integer := integer( floor( clkFreq0 / ( sampleFreq ) ) ) - 1;
+constant maxCntSampleClkHalf0 : integer := maxCntSampleClk0 / 2;
+constant maxCntSampleClk1 : integer := integer( floor( clkFreq1 / ( sampleFreq ) ) ) - 1;
+constant maxCntSampleClkHalf1 : integer := maxCntSampleClk1 / 2;
+constant maxCntSampleClk_total : integer := integer( floor( clkFreqMax / ( sampleFreq ) ) ) - 1;
+signal sampleClkCnt : integer range 0 to maxCntSampleClk_total;
 
 constant minCycles : integer := 5;
 signal pwmL_int_buf, pwmR_int_buf : std_logic_vector( 0 to minCycles - 1 );
@@ -178,13 +186,15 @@ begin
         sampleClkCnt <= 0;
       else
       
-        if ( sampleClkCnt >= maxCntSampleClkHalf ) then
+        if ( ( clkFreq = '0' and sampleClkCnt >= maxCntSampleClkHalf0 ) or 
+             ( clkFreq = '1' and sampleClkCnt >= maxCntSampleClkHalf1 ) ) then
           sampleClkOut <= '0';
         else
           sampleClkOut <= '1';
         end if;
       
-        if ( sampleClkCnt = maxCntSampleClk ) then
+        if ( ( clkFreq = '0' and sampleClkCnt = maxCntSampleClk0 ) or
+             ( clkFreq = '1' and sampleClkCnt = maxCntSampleClk1 ) ) then
           sampleClkCnt <= 0;
         else 
           sampleClkCnt <= sampleClkCnt + 1;

@@ -12,13 +12,18 @@ use IEEE.std_logic_misc.ALL;
 entity commTransceiver is
   generic( 
     packetBits : integer := 8;
-    clkFreq : real; -- kHz
+    clkFreq0 : real; -- kHz
+    clkFreq1 : real; -- kHz
+    clkFreqMax : real; -- kHz
     usBit : real
   );
   port(
     serDatIn : in std_logic;
     clk : in std_logic;
     rst : in std_logic;
+    
+    -- Corresponding to the generics.
+    clkFreq : in std_logic;
     
     --serDatOut : out std_logic;
     --txActive : out std_logic;
@@ -30,9 +35,13 @@ entity commTransceiver is
 end commTransceiver;
 
 architecture rtl of commTransceiver is
-  constant cyclesBit : integer := integer( ceil( ( usBit / 1000000.0 ) /  ( 1.0 / ( clkFreq * 1000.0 ) ) ) );
-  constant cyclesTimeout : integer := 2 * cyclesBit;
-  constant cyclesHalfBit : integer := cyclesBit / 2;
+  constant cyclesBitMax : integer := integer( ceil( ( usBit / 1000000.0 ) /  ( 1.0 / ( clkFreqMax * 1000.0 ) ) ) );
+  constant cyclesTimeout : integer := 2 * cyclesBitMax;
+  
+  constant cyclesBit0 : integer := integer( ceil( ( usBit / 1000000.0 ) /  ( 1.0 / ( clkFreq0 * 1000.0 ) ) ) );
+  constant cyclesBit1 : integer := integer( ceil( ( usBit / 1000000.0 ) /  ( 1.0 / ( clkFreq1 * 1000.0 ) ) ) );
+  constant cyclesHalfBit0 : integer := cyclesBit0 / 2;
+  constant cyclesHalfBit1 : integer := cyclesBit1 / 2;
   
   -- Timeout counter.
   signal timeoutCnt : integer range 0 to cyclesTimeout;
@@ -99,7 +108,8 @@ begin
           timeoutCnt <= timeoutCnt + 1;
           
           -- Sample?
-          if ( timeoutCnt = cyclesHalfBit ) then
+          if ( ( clkFreq = '0' and timeoutCnt = cyclesHalfBit0 ) or
+               ( clkFreq = '1' and timeoutCnt = cyclesHalfBit1 ) ) then
             curPacket( packetBits - 1 ) <= serDatIn_filtered;
             curPacket( packetBits - 2 downto 0 ) <= curPacket( packetBits - 1 downto 1 );
             bitCnt <= bitCnt + 1;

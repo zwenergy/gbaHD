@@ -53,12 +53,16 @@ set_property PACKAGE_PIN B1 [get_ports {redPxl[3]}]
 set_property PACKAGE_PIN H2 [get_ports {redPxl[4]}]
 
 # Audio Pins.
-# Audio Left (FPGA_AR_D2)
-set_property PACKAGE_PIN A10 [get_ports audioLIn]
-set_property IOSTANDARD LVCMOS33 [get_ports audioLIn]
-# Audio Right (FPGA_AR_D3)
-set_property PACKAGE_PIN B6 [get_ports audioRIn]
+# Audio Right (FPGA_AR_D2)
+set_property PACKAGE_PIN A10 [get_ports audioRIn]
 set_property IOSTANDARD LVCMOS33 [get_ports audioRIn]
+# Audio Left (FPGA_AR_D3)
+set_property PACKAGE_PIN B6 [get_ports audioLIn]
+set_property IOSTANDARD LVCMOS33 [get_ports audioLIn]
+
+# AR_3v3_EN
+set_property PACKAGE_PIN L13 [get_ports enable3V3]
+set_property IOSTANDARD LVCMOS33 [get_ports enable3V3]
 
 
 # ADC Pins.
@@ -131,3 +135,5 @@ set_property PACKAGE_PIN D4 [get_ports hdmiHPD]
 
 create_clock -period 10.000 -name clk -waveform {0.000 5.000} [get_ports clk]
 
+# CDC
+set_false_path -from [get_clocks pxlClkInt] -to [get_clocks clk]

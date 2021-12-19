@@ -32,14 +32,15 @@ entity osd is
     smooth4x : out std_logic;
     pixelGrid : out std_logic;
     bgrid : out std_logic;
-    colorMode : out std_logic
+    colorMode : out std_logic;
+    rate : out std_logic
   );
 end entity;
 
 architecture rtl of osd is
 -- Assuming the resolution is 1280x720
 constant MENU_WIDTHFIELDS : integer := 27;
-constant MENU_HEIGHTFIELDS : integer := 7;
+constant MENU_HEIGHTFIELDS : integer := 8;
 constant CHARWIDTH : integer := 5;
 constant CHARHEIGHT : integer := 7;
 constant CHARSPACE : integer := 1;
@@ -55,6 +56,8 @@ constant SMOOTHFIELDX : integer := 15;
 constant SMOOTHFIELDY : integer := 4;
 constant COLORFIELDX : integer := 15;
 constant COLORFIELDY : integer := 5;
+constant FRAMEFIELDX : integer := 15;
+constant FRAMEFIELDY : integer := 6;
 
 type tLine  is array( 0 to MENU_WIDTHFIELDS - 1 ) of integer range 0 to 37;
 type tMenuFrame is array( 0 to MENU_HEIGHTFIELDS - 1 ) of tLine;
@@ -62,8 +65,8 @@ type tMenuFrame is array( 0 to MENU_HEIGHTFIELDS - 1 ) of tLine;
 signal mainMenu : tMenuFrame := (
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
--- GBAHD v1.3B
-( 00, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 22, 27, 36, 29, 02, 00, 00, 00, 00, 00, 00, 00, 00 ),
+-- GBAHD v1.3C
+( 00, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 22, 27, 36, 29, 03, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- PXL GRID
@@ -72,6 +75,8 @@ signal mainMenu : tMenuFrame := (
 ( 00, 19, 13, 15, 15, 20, 08, 09, 14, 07, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- Color
 ( 00, 03, 15, 12, 15, 18, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
+-- Framerate
+( 00, 06, 18, 01, 13, 05, 18, 01, 20, 05, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- One empty line
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 )
 );
@@ -97,6 +102,9 @@ signal scaleCntX, scaleCntY : integer range 0 to SCALE - 1;
 -- 0: Normal, 1: GBA mode
 signal colorMode_int : std_logic;
 
+-- 0: 60hz, 1: 59....
+signal framerate : std_logic;
+
 signal smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int : std_logic;
 signal controller_int, controller_prev : std_logic_vector( 5 downto 0 );
 signal lineSelected : integer range 0 to MENU_HEIGHTFIELDS - 1;
@@ -109,9 +117,10 @@ begin
   pixelGrid <= pixelGrid_int;
   bgrid <= bgrid_int;
   colorMode <= colorMode_int;
+  rate <= framerate;
   
   -- Update menu.
-  process( smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int, colorMode_int ) is
+  process( smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int, colorMode_int, framerate ) is
   begin
     if ( smooth2x_int = '1' ) then
       -- 2X
@@ -175,6 +184,24 @@ begin
       mainMenu( COLORFIELDY )( COLORFIELDX + 3 ) <= 0;
       mainMenu( COLORFIELDY )( COLORFIELDX + 4 ) <= 0;
       mainMenu( COLORFIELDY )( COLORFIELDX + 5 ) <= 0;
+    end if;
+    
+    --60hz
+    if ( framerate = '0' ) then
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX ) <= 32;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 1 ) <= 15;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 2 ) <= 8;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 3 ) <= 26;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 4 ) <= 0;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 5 ) <= 0;
+    else
+      --59.7Hz
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX ) <= 31;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 1 ) <= 35;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 2 ) <= 36;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 3 ) <= 33;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 4 ) <= 8;
+      mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 5 ) <= 26;
     end if;
   end process;
   
@@ -309,6 +336,7 @@ begin
         pixelGrid_int <= '0';
         bgrid_int <= '0';
         colorMode_int <= '0';
+        framerate <= '0';
         lineSelected <= 3;
       else
       
@@ -322,7 +350,7 @@ begin
           
           -- Down
           if ( controller_int( 1 ) = '1' and controller_prev( 1 ) = '0' ) then
-            if ( lineSelected < 5 ) then
+            if ( lineSelected < 6 ) then
               lineSelected <= lineSelected + 1;
             end if;
           end if;
@@ -372,6 +400,10 @@ begin
               -- Color  
               when 5 =>                
                 colorMode_int <= not colorMode_int;
+                
+              -- Framerate
+              when 6 =>
+                framerate <= not framerate;
               
               when others =>
                 pixelGrid_int <= '0';

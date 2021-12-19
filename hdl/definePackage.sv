@@ -9,7 +9,8 @@ package definePackage;
   localparam AUDIO_BIT_WIDTH = 16;
   
   `ifdef RES0_720P
-  localparam pxlClkFrq = 74250.0;
+  localparam pxlClkFrq_60hz = 74250.0;
+  localparam pxlClkFrq_59hz = 73878.750;
   localparam widthMax = 1650;
   localparam heightMax = 750;
   localparam FRAMEWIDTH = 1280;
@@ -18,7 +19,8 @@ package definePackage;
   localparam CLKDIV = 5;
   localparam CLK0DIV = 2.0;
   localparam CLK1DIV = 10;
-  localparam pxlClkPeriod = 13.468013;
+  localparam pxlClkPeriod_60hz = (1/pxlClkFrq_60hz)*1000000;
+  localparam pxlClkPeriod_59hz = (1/pxlClkFrq_59hz)*1000000;
   localparam SMOOTHENABLE = 1;
   localparam GBACLKMUL = 532;
   localparam GBACLKDIV = 9375;
@@ -28,7 +30,8 @@ package definePackage;
   `endif
   
   `ifdef RES0_1080P
-  localparam pxlClkFrq = 148500.0;
+  localparam pxlClkFrq_60hz = 148500.0;
+  localparam pxlClkFrq_59hz = 147812.5;
   localparam widthMax = 2200;
   localparam heightMax = 1125;
   localparam FRAMEWIDTH = 1920;
@@ -37,7 +40,8 @@ package definePackage;
   localparam CLKDIV = 5;
   localparam CLK0DIV = 1.0;
   localparam CLK1DIV = 5;
-  localparam pxlClkPeriod = 6.734007;
+  localparam pxlClkPeriod_60hz = (1/pxlClkFrq_60hz)*1000000;
+  localparam pxlClkPeriod_59hz = (1/pxlClkFrq_59hz)*1000000;
   localparam SMOOTHENABLE = 0;
   localparam GBACLKMUL = 266;
   localparam GBACLKDIV = 9375;

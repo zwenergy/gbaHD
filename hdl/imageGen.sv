@@ -49,6 +49,7 @@ module imageGenV
   input logic [5:0] controller,
   
   output logic colorMode,
+  output logic framerate,
   
   output logic nextLine,
   output logic cacheUpdate,
@@ -73,13 +74,16 @@ begin
 end
 
 // Audio module.
-pwm2pcm #( .clkFreq( pxlClkFrq ), 
+pwm2pcm #( .clkFreq0( pxlClkFrq_60hz ),
+           .clkFreq1( pxlClkFrq_59hz ),
+           .clkFreqMax( pxlClkFrq_60hz ),
            .sampleFreq( 48.0 ),
            .damp( 2 ) )
 pwm2pcm( .pwmInL( audioLIn ), 
          .pwmInR( audioRIn ), 
          .clk( pxlClk ), 
          .rst( rst ), 
+         .clkFreq( framerate ),
          .sampleClkOut( audioClk_gba ), 
          .datOutL( pcmL ), 
          .datOutR( pcmR ), 
@@ -357,7 +361,8 @@ osd ( .pxlX( cx ),
       .smooth4x( smooth4x ),
       .pixelGrid( pxlGrid ),
       .bgrid( brightGrid ),
-      .colorMode( colorMode ) );
+      .colorMode( colorMode ),
+      .rate( framerate ) );
 
       
 // Border gen.
