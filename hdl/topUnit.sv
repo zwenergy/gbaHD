@@ -34,7 +34,7 @@ module topUnit
 
 
 // Pull 3V3_EN line low to enable them.
-assign enable3v3 = 0;
+assign enable3V3 = 0;
 
 // Reconf.
 wire framerate, drdy, locked, busy, dwe, den, dclkDRP, rstMMCM, busyDRP;
