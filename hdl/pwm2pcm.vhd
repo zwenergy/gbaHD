@@ -38,8 +38,8 @@ constant maxCntClk : integer := integer( ceil( clkFreqMax / sampleFreq ) ) - 1;
 constant maxHighCnt : integer := integer( ceil( clkFreqMax / 65.5360 ) ) - 1;
 constant highCntBits : integer := integer( ceil( log2( real( maxHighCnt ) ) ) ) + 1;
 signal cnt : integer range 0 to maxCntClk;
-signal highCntL, lowCntL, diffL : unsigned( highCntBits - 1 downto 0 );
-signal highCntR, lowCntR, diffR : unsigned( highCntBits - 1 downto 0 );
+signal highCntL : unsigned( highCntBits - 1 downto 0 );
+signal highCntR : unsigned( highCntBits - 1 downto 0 );
 signal curSampleL, curSampleR : std_logic_vector( 15 downto 0 );
 signal pwmInL_prev, pwmInR_prev: std_logic;
 
@@ -105,24 +105,17 @@ begin
     if ( rising_edge( clk ) ) then
       if ( rst = '1' ) then
         highCntL <= ( others => '0' );
-        lowCntL <= ( others => '0' );
         pwmInL_prev <= '0';
         curSampleL <= ( others => '0' );
-        diffL <= ( others => '0' );
         
         highCntR <= ( others => '0' );
-        lowCntR <= ( others => '0' );
         pwmInR_prev <= '0';
         curSampleR <= ( others => '0' );
-        diffR <= ( others => '0' );
       else
         pwmInL_prev <= pwmL_int;
         
         if ( pwmInL_prev = '0'  and pwmL_int = '1' ) then
           highCntL <= ( others => '0' );
-          lowCntL <= ( others => '0' );
-          
-          diffL <= highCntL - lowCntL;
           
           tmpCurSampleL := ( others => '0' );
           tmpCurSampleL( 15 downto ( 16 - highCntBits ) ) := highCntL;
@@ -132,8 +125,6 @@ begin
           
         elsif ( pwmL_int = '1' ) then
           highCntL <= highCntL + 1;
-        else
-          lowCntL <= lowCntL + 1;
         end if;
         
         
@@ -141,9 +132,6 @@ begin
         
         if ( pwmInR_prev = '0'  and pwmR_int = '1' ) then
           highCntR <= ( others => '0' );
-          lowCntR <= ( others => '0' );
-          
-          diffR <= highCntR - lowCntR;
           
           tmpCurSampleR := ( others => '0' );
           tmpCurSampleR( 15 downto ( 16 - highCntBits ) ) := highCntR;
@@ -153,8 +141,6 @@ begin
           
         elsif ( pwmR_int = '1' ) then
           highCntR <= highCntR + 1;
-        else
-          lowCntR <= lowCntR + 1;
         end if;
         
       end if;
