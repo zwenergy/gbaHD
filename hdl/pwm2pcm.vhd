@@ -36,7 +36,7 @@ end pwm2pcm;
 architecture rtl of pwm2pcm is
 constant maxCntClk : integer := integer( ceil( clkFreqMax / sampleFreq ) ) - 1;
 constant maxHighCnt : integer := integer( ceil( clkFreqMax / 65.5360 ) ) - 1;
-constant highCntBits : integer := integer( ceil( log2( real( maxHighCnt ) ) ) ) + 1;
+constant highCntBits : integer := integer( ceil( log2( real( maxHighCnt + 1) ) ) );
 signal cnt : integer range 0 to maxCntClk;
 signal highCntL : unsigned( highCntBits - 1 downto 0 );
 signal highCntR : unsigned( highCntBits - 1 downto 0 );
