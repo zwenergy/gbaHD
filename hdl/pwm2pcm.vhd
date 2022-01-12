@@ -37,10 +37,11 @@ architecture rtl of pwm2pcm is
 constant maxCntClk : integer := integer( ceil( clkFreqMax / sampleFreq ) ) - 1;
 constant maxHighCnt : integer := integer( ceil( clkFreqMax / 65.5360 ) ) - 1;
 constant highCntBits : integer := integer( ceil( log2( real( maxHighCnt + 1) ) ) );
+constant highCntOffset : integer := maxHighCnt / 2;
 signal cnt : integer range 0 to maxCntClk;
 signal highCntL : unsigned( highCntBits - 1 downto 0 );
 signal highCntR : unsigned( highCntBits - 1 downto 0 );
-signal curSampleL, curSampleR : std_logic_vector( 15 downto 0 );
+signal curSampleL, curSampleR : signed( 15 downto 0 );
 signal pwmInL_prev, pwmInR_prev: std_logic;
 
 constant maxCntSampleClk0 : integer := integer( floor( clkFreq0 / ( sampleFreq ) ) ) - 1;
@@ -56,8 +57,8 @@ signal pwmL_int, pwmR_int : std_logic;
 
 begin
 
-  datOutL <= curSampleL;
-  datOutR <= curSampleR;
+  datOutL <= std_logic_vector( curSampleL );
+  datOutR <= std_logic_vector( curSampleR );
   
   -- Filter
   process( clk ) is
@@ -100,7 +101,7 @@ begin
   end process;
   
   process( clk ) is
-  variable tmpCurSampleL, tmpCurSampleR : unsigned( 15 downto 0 );
+  variable tmpCurSampleL, tmpCurSampleR : signed( 15 downto 0 );
   begin
     if ( rising_edge( clk ) ) then
       if ( rst = '1' ) then
@@ -118,10 +119,10 @@ begin
           highCntL <= ( others => '0' );
           
           tmpCurSampleL := ( others => '0' );
-          tmpCurSampleL( 15 downto ( 16 - highCntBits ) ) := highCntL;
+          tmpCurSampleL( 15 downto ( 16 - highCntBits ) ) := signed(highCntL - to_unsigned(highCntOffset, highCntL'length));
           tmpCurSampleL := shift_right( tmpCurSampleL, damp );
           
-          curSampleL <= std_logic_vector( tmpCurSampleL );
+          curSampleL <= tmpCurSampleL;
           
         elsif ( pwmL_int = '1' ) then
           highCntL <= highCntL + 1;
@@ -134,10 +135,10 @@ begin
           highCntR <= ( others => '0' );
           
           tmpCurSampleR := ( others => '0' );
-          tmpCurSampleR( 15 downto ( 16 - highCntBits ) ) := highCntR;
+          tmpCurSampleR( 15 downto ( 16 - highCntBits ) ) := signed(highCntR - to_unsigned(highCntOffset, highCntR'length));
           tmpCurSampleR := shift_right( tmpCurSampleR, damp );
           
-          curSampleR <= std_logic_vector( tmpCurSampleR );
+          curSampleR <= tmpCurSampleR;
           
         elsif ( pwmR_int = '1' ) then
           highCntR <= highCntR + 1;
