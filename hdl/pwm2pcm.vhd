@@ -38,6 +38,8 @@ constant maxCntClk : integer := integer( ceil( clkFreqMax / sampleFreq ) ) - 1;
 constant maxHighCnt : integer := integer( ceil( clkFreqMax / 65.5360 ) ) - 1;
 constant highCntBits : integer := integer( ceil( log2( real( maxHighCnt + 1) ) ) );
 constant highCntOffset : integer := maxHighCnt / 2;
+-- Base 2 log of 1/alpha (in other words, a right shift) for the IIR filter
+constant log2InvAlpha : integer := 1;
 signal cnt : integer range 0 to maxCntClk;
 signal highCntL : unsigned( highCntBits - 1 downto 0 );
 signal highCntR : unsigned( highCntBits - 1 downto 0 );
@@ -102,6 +104,7 @@ begin
   
   process( clk ) is
   variable tmpCurSampleL, tmpCurSampleR : signed( 15 downto 0 );
+  variable diffL, diffR : signed( 15 downto 0 );
   begin
     if ( rising_edge( clk ) ) then
       if ( rst = '1' ) then
@@ -122,7 +125,9 @@ begin
           tmpCurSampleL( 15 downto ( 16 - highCntBits ) ) := signed(highCntL - to_unsigned(highCntOffset, highCntL'length));
           tmpCurSampleL := shift_right( tmpCurSampleL, damp );
           
-          curSampleL <= tmpCurSampleL;
+          -- Apply first order IIR filter
+          diffL := tmpCurSampleL - curSampleL;
+          curSampleL <= curSampleL + shift_right(diffL, log2InvAlpha);
           
         elsif ( pwmL_int = '1' ) then
           highCntL <= highCntL + 1;
@@ -138,7 +143,9 @@ begin
           tmpCurSampleR( 15 downto ( 16 - highCntBits ) ) := signed(highCntR - to_unsigned(highCntOffset, highCntR'length));
           tmpCurSampleR := shift_right( tmpCurSampleR, damp );
           
-          curSampleR <= tmpCurSampleR;
+          -- Apply first order IIR filter
+          diffR := tmpCurSampleR - curSampleR;
+          curSampleR <= curSampleR + shift_right(diffR, log2InvAlpha);
           
         elsif ( pwmR_int = '1' ) then
           highCntR <= highCntR + 1;
