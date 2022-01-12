@@ -59,7 +59,7 @@ module imageGenV
   output logic tmdsClk  
 );
 
-localparam audioDamp = 6;
+localparam audioDamp = 2;
 
 wire audioClk_gba, audioValid;
 logic [AUDIO_BIT_WIDTH-1:0] pcmL, pcmR, audioL, audioR;
@@ -78,7 +78,7 @@ pwm2pcm #( .clkFreq0( pxlClkFrq_60hz ),
            .clkFreq1( pxlClkFrq_59hz ),
            .clkFreqMax( pxlClkFrq_60hz ),
            .sampleFreq( 48.0 ),
-           .damp( 2 ) )
+           .damp( audioDamp ) )
 pwm2pcm( .pwmInL( audioLIn ), 
          .pwmInR( audioRIn ), 
          .clk( pxlClk ), 
