@@ -1,3 +1,14 @@
+// Which controller convention to use.
+//
+// 'SNES' uses B and Y as the primary and secondary buttons
+// (GBA A and B), which matches what most SNES games use
+// and how your thumb is intended to rest on the face
+// buttons.
+//
+// 'LITERAL' maps SNES A and B to GBA A and B.
+#define CONVENTION SNES
+//#define CONVENTION LITERAL
+
 // Pin definitions.
 // GBA outputs.
 // These definitions are just for reference. If other pins should be used,
@@ -38,6 +49,10 @@
 #define WAIT2US NOP20; NOP10; NOP1
 #define WAIT8US NOP80; NOP40; NOP5; NOP1; NOP1; NOP1
 
+// Conventions
+#define SNES 0
+#define LITERAL 1
+
 // The latest controller state.
 uint8_t conA;
 uint8_t conB;
@@ -74,7 +89,11 @@ void readController() {
       uint8_t curDat = !digitalRead( SNESSERIAL );
       switch ( i ) {
         case 0:
+#if CONVENTION == SNES
+          conA |= curDat;
+#else
           conB |= curDat;
+#endif
           break;
         case 1:
           conB |= curDat;
@@ -101,7 +120,11 @@ void readController() {
           conA |= curDat;
           break;
         case 9:
+#if CONVENTION == SNES
+          conB |= curDat;
+#else
           conA |= curDat;
+#endif
           break;
         case 10:
           conL = curDat;
