@@ -95,24 +95,27 @@ logic [23:0] rgb;
 logic [10:0] cy, frameHeight;
 logic [11:0] cx, frameWidth;
 
-logic [11:0] cxDel, setStartX; 
-logic [10:0] cyDel, setStartY;
-logic setStart;
+logic enableHdmi;
+
+localparam int gbaVideoXStart = ( FRAMEWIDTH - ( maxScaleCnt + 1 ) * 240 ) / 2;
+localparam int gbaVideoYStart = ( FRAMEHEIGHT - ( maxScaleCnt + 1 ) * 160 ) / 2;
+localparam int gbaVideoXStop = gbaVideoXStart + ( maxScaleCnt + 1 ) * 240;
+localparam int gbaVideoYStop = gbaVideoYStart + ( maxScaleCnt + 1 ) * 160;
+
 
 hdmi #( .VIDEO_ID_CODE(VIDEOID), 
         .DVI_OUTPUT(0), 
         .VIDEO_REFRESH_RATE(60.0), 
         .AUDIO_RATE(48000), 
-        .AUDIO_BIT_WIDTH(AUDIO_BIT_WIDTH) ) 
+        .AUDIO_BIT_WIDTH(AUDIO_BIT_WIDTH),
+        .START_X(gbaVideoXStart),
+        .START_Y(gbaVideoYStart) )
 hdmi( .clk_pixel_x5(pxlClk5x), 
       .clk_pixel(pxlClk), 
       .clk_audio(audioClk_gba), 
       .rgb(rgb), 
-      .reset( rst ), 
+      .reset( rst || !enableHdmi ),
       .audio_sample_word('{audioL, audioR}), 
-      .setStart( setStart ), 
-      .setStartX( setStartX ), 
-      .setStartY( setStartY ), 
       .tmds(tmds), 
       .tmds_clock(tmdsClk), 
       .cx(cx), 
@@ -122,7 +125,6 @@ hdmi( .clk_pixel_x5(pxlClk5x),
 
 
 // Create the image.
-logic newFrameInDel, newFrameProcessed;
 logic [2:0] lineCntScale, pxlCntScale, gridXCnt, smoothXCnt;
 logic drawGBA;
 logic [7:0] redPxlGBA, greenPxlGBA, bluePxlGBA;
@@ -137,34 +139,24 @@ logic smooth2x, smooth4x;
 logic gridAct;
 logic brightGrid;
 
-localparam int gbaVideoXStart = ( FRAMEWIDTH - ( maxScaleCnt + 1 ) * 240 ) / 2;
-localparam int gbaVideoYStart = ( FRAMEHEIGHT - ( maxScaleCnt + 1 ) * 160 ) / 2;
-
 always_ff @( posedge pxlClk )
 begin
-  if ( cx >= gbaVideoXStart && cx < ( gbaVideoXStart + ( maxScaleCnt + 1 ) * 240 ) &&
-       cy >= gbaVideoYStart && cy < ( gbaVideoYStart + ( maxScaleCnt + 1 ) * 160 ) )
-  begin
+  if ( cx >= gbaVideoXStart && cx < gbaVideoXStop &&
+       cy >= gbaVideoYStart && cy < gbaVideoYStop )
     drawGBA <= 1;
-  end
   else
-  begin
     drawGBA <= 0;
-  end
   
-  if ( cxDel == ( frameWidth - 8 ) && sameLine == 0 && 
-       !( newFrameIn == 1 && newFrameProcessed == 0 ) &&
-       cy >= gbaVideoYStart && lineCntScale == maxScaleCnt ) begin
+  if ( cx == gbaVideoXStop && !sameLine &&
+       cy >= gbaVideoYStart && lineCntScale == maxScaleCnt )
     nextLine <= 1;
-  end else begin
+  else
     nextLine <= 0;
-  end
-  
-  if ( cxDel == frameWidth - 8 ) begin
+
+  if ( cx == gbaVideoXStop )
     cacheUpdate <= 1;
-  end else begin
+  else
     cacheUpdate <= 0;
-  end
 end
 
 assign rgb = { redPxl, greenPxl, bluePxl };
@@ -174,47 +166,22 @@ always_ff @( posedge pxlClk )
 begin
   if ( rst )
   begin
-    cxDel <= 11'(0);
-    cyDel <= 10'(0);
-    newFrameInDel <= 0;
-    newFrameProcessed <= 0;
-    setStartX <= 11'(0);
-    setStartY <= 10'(0);
-    setStart <= 0;
     pxlCntRead <= 8'(0);
     pxlCntScale <= 3'(0);
     lineCntScale <= 3'(0);
     redPxlGBA <= 8'(0);
     greenPxlGBA <= 8'(0);
     bluePxlGBA <= 8'(0);
+    enableHdmi <= 0;
   end
   else
   begin
-    cxDel <= cx;
-    cyDel <= cy;
-    newFrameInDel <= newFrameIn;
-    
+    if (newFrameIn)
+      enableHdmi <= 1;
+
     redPxlGBA <= curLineCurPxlRedIn;
     greenPxlGBA <= curLineCurPxlGreenIn;
     bluePxlGBA <= curLineCurPxlBlueIn;
-    
-    if ( newFrameIn == 1 && newFrameInDel == 0 )
-    begin
-      newFrameProcessed <= 0;
-    end
-    
-    if ( newFrameIn == 1 && newFrameProcessed == 0 )
-    begin
-      setStart <= 1;
-      setStartX <= 12'(0);
-      setStartY <= 11'(gbaVideoYStart-2);
-    end
-    
-    if ( newFrameIn == 1 && newFrameProcessed == 0 && cyDel != cy )
-    begin
-      setStart <= 0;
-      newFrameProcessed <= 1;
-    end
 
     if ( cx == gbaVideoXStart || gridXCnt == maxScaleCnt ) begin
       gridXCnt <= 0;
@@ -223,14 +190,13 @@ begin
       gridXCnt <= gridXCnt + 1;
       smoothXCnt <= smoothXCnt + 1;
     end
-    
+
     // FIXME: magic constant 3 gets pixel transitions from lineCache to
     // coincide with desired HDMI output, would be good to derive from cycle
     // timings in a more principled way
-    if ( cx <= gbaVideoXStart - 3 ||
-         cx > gbaVideoXStart - 3 + ( maxScaleCnt + 1 ) * 240 )
+    if ( cx <= gbaVideoXStart - 3 || cx > gbaVideoXStop - 3 )
     begin
-      pxlCntScale <= 2'(0);
+      pxlCntScale <= 3'(0);
       pxlCntRead <= 8'(0);
     end else begin
       if ( pxlCntScale == maxScaleCnt ) begin
@@ -243,7 +209,7 @@ begin
     
     if ( cx == (frameWidth - 1) )
     begin
-      if ( ( cy == ( frameHeight - 1 ) ) || ( newFrameIn == 1 && newFrameProcessed == 0 ) )
+      if ( ( cy == ( frameHeight - 1 ) ) )
       begin
         lineCntScale <= 3'(0);
       end else if ( lineCntScale == maxScaleCnt )
