@@ -282,7 +282,8 @@ gridGen ( .pxlInRed( redPxlGBA ),
           
 
 // Smoothing.
-smooth4x ( .rTL( prevLinePrevPxlRedIn ),
+smooth4x smooth4xMod(
+           .rTL( prevLinePrevPxlRedIn ),
            .gTL( prevLinePrevPxlGreenIn ),
            .bTL( prevLinePrevPxlBlueIn ),
            .rTM( prevLineCurPxlRedIn ),
