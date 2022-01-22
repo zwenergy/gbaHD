@@ -105,7 +105,8 @@ localparam int gbaVideoYStop = gbaVideoYStart + ( maxScaleCnt + 1 ) * 160;
 
 hdmi #( .VIDEO_ID_CODE(VIDEOID), 
         .DVI_OUTPUT(0), 
-        .VIDEO_REFRESH_RATE(60.0), 
+        .VIDEO_REFRESH_RATE(60.0),
+        .IT_CONTENT(1),
         .AUDIO_RATE(48000), 
         .AUDIO_BIT_WIDTH(AUDIO_BIT_WIDTH),
         .START_X(gbaVideoXStart),
