@@ -6,8 +6,8 @@
 // buttons.
 //
 // 'LITERAL' maps SNES A and B to GBA A and B.
-#define CONVENTION SNES
-//#define CONVENTION LITERAL
+//#define CONVENTION SNES
+#define CONVENTION LITERAL
 
 // Pin definitions.
 // GBA outputs.
