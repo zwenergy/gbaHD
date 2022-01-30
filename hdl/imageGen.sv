@@ -162,6 +162,7 @@ end
 
 assign rgb = { redPxl, greenPxl, bluePxl };
 assign curPxl = pxlCntRead;
+logic newFrameDel;
 
 always_ff @( posedge pxlClk )
 begin
@@ -174,11 +175,22 @@ begin
     greenPxlGBA <= 8'(0);
     bluePxlGBA <= 8'(0);
     enableHdmi <= 0;
+    newFrameDel <= 0;
   end
   else
   begin
     if (newFrameIn)
       enableHdmi <= 1;
+
+    newFrameDel <= newFrameIn;
+    
+    // Some shields offer in-game reset support, hence
+    // we should resync if a new frame comes at an unexpected time.
+    if ( newFrameIn == 1 && newFrameDel == 0 &&
+         !( cy == gbaVideoYStart || cy == gbaVideoYStart - 1 ) )
+    begin
+      enableHdmi <= 0;
+    end
 
     redPxlGBA <= curLineCurPxlRedIn;
     greenPxlGBA <= curLineCurPxlGreenIn;
