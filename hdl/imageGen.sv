@@ -139,6 +139,7 @@ logic pxlGrid;
 logic smooth2x, smooth4x;
 logic gridAct;
 logic brightGrid;
+logic gridMult;
 
 always_ff @( posedge pxlClk )
 begin
@@ -273,12 +274,14 @@ end
 // Pixel grid.
 assign gridAct = ( gridXCnt == 0 || lineCntScale == 0 );
 
-gridGen #( .gridLineChange( 8'b00011101 ) )
+gridGen #( .ALPHA(2),
+           .DELTA(29) )
 gridGen ( .pxlInRed( redPxlGBA ),
           .pxlInGreen( greenPxlGBA ),
           .pxlInBlue( bluePxlGBA ),
           .gridAct( gridAct ),
           .brightGrid( brightGrid ),
+          .gridMult( gridMult ),
           .pxlOutRed( gridRed ),
           .pxlOutGreen( gridGreen ),
           .pxlOutBlue( gridBlue ) );
@@ -347,6 +350,7 @@ osd ( .pxlX( cx ),
       .smooth4x( smooth4x ),
       .pixelGrid( pxlGrid ),
       .bgrid( brightGrid ),
+      .gridMult( gridMult ),
       .colorMode( colorMode ),
       .rate( framerate ) );
 
