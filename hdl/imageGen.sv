@@ -59,26 +59,21 @@ module imageGenV
   output logic tmdsClk  
 );
 
-localparam audioDamp = 2;
+localparam audioAtten = 1;
 
 wire audioClk_gba, audioValid;
-logic [AUDIO_BIT_WIDTH-1:0] pcmL, pcmR, audioL, audioR;
-
-// Store audio samples.
-always_ff @( posedge pxlClk )
-begin
-  if ( audioValid ) begin
-    audioL <= pcmL;
-    audioR <= pcmR;
-  end
-end
+logic [AUDIO_BIT_WIDTH-1:0] pcmL, pcmR;
 
 // Audio module.
 pwm2pcm #( .clkFreq0( pxlClkFrq_60hz ),
            .clkFreq1( pxlClkFrq_59hz ),
-           .clkFreqMax( pxlClkFrq_60hz ),
            .sampleFreq( 48.0 ),
-           .damp( audioDamp ) )
+           .atten( audioAtten ),
+           // Chosen to be divisible by input and output sample rates:
+           // lcm(32768, 48000) / 48000 = 256
+           .upsample( 256 ),
+           // Determined by testing
+           .filter( 9 ) )
 pwm2pcm( .pwmInL( audioLIn ), 
          .pwmInR( audioRIn ), 
          .clk( pxlClk ), 
@@ -86,8 +81,7 @@ pwm2pcm( .pwmInL( audioLIn ),
          .clkFreq( framerate ),
          .sampleClkOut( audioClk_gba ), 
          .datOutL( pcmL ), 
-         .datOutR( pcmR ), 
-         .validOut( audioValid ) );
+         .datOutR( pcmR ));
 
 
 // HDMI.
@@ -116,7 +110,7 @@ hdmi( .clk_pixel_x5(pxlClk5x),
       .clk_audio(audioClk_gba), 
       .rgb(rgb), 
       .reset( rst || !enableHdmi ),
-      .audio_sample_word('{audioL, audioR}), 
+      .audio_sample_word('{pcmL, pcmR}),
       .tmds(tmds), 
       .tmds_clock(tmdsClk), 
       .cx(cx), 
