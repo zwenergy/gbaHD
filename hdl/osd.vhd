@@ -375,7 +375,7 @@ begin
           
           -- Down
           if ( controller_int( 1 ) = '1' and controller_prev( 1 ) = '0' ) then
-            if ( lineSelected < 6 ) then
+            if ( lineSelected < FRAMEFIELDY ) then
               lineSelected <= lineSelected + 1;
             end if;
           end if;
