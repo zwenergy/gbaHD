@@ -32,6 +32,7 @@ entity osd is
     smooth4x : out std_logic;
     pixelGrid : out std_logic;
     bgrid : out std_logic;
+    gridMult : out std_logic;
     colorMode : out std_logic;
     rate : out std_logic
   );
@@ -40,7 +41,7 @@ end entity;
 architecture rtl of osd is
 -- Assuming the resolution is 1280x720
 constant MENU_WIDTHFIELDS : integer := 27;
-constant MENU_HEIGHTFIELDS : integer := 8;
+constant MENU_HEIGHTFIELDS : integer := 9;
 constant CHARWIDTH : integer := 5;
 constant CHARHEIGHT : integer := 7;
 constant CHARSPACE : integer := 1;
@@ -52,12 +53,14 @@ constant MENUENDX : integer := MENUSTARTX + ( FIELDWIDTH * MENU_WIDTHFIELDS * sc
 constant MENUENDY : integer := MENUSTARTY + ( FIELDHEIGHT * MENU_HEIGHTFIELDS * scale );
 constant PXLGRIDFIELDX : integer := 15;
 constant PXLGRIDFIELDY : integer := 3;
+constant GRIDMULTFIELDX : integer := 15;
+constant GRIDMULTFIELDY : integer := PXLGRIDFIELDY + 1;
 constant SMOOTHFIELDX : integer := 15;
-constant SMOOTHFIELDY : integer := 4;
+constant SMOOTHFIELDY : integer := GRIDMULTFIELDY + 1;
 constant COLORFIELDX : integer := 15;
-constant COLORFIELDY : integer := 5;
+constant COLORFIELDY : integer := SMOOTHFIELDY + 1;
 constant FRAMEFIELDX : integer := 15;
-constant FRAMEFIELDY : integer := 6;
+constant FRAMEFIELDY : integer := COLORFIELDY + 1;
 
 type tLine  is array( 0 to MENU_WIDTHFIELDS - 1 ) of integer range 0 to 37;
 type tMenuFrame is array( 0 to MENU_HEIGHTFIELDS - 1 ) of tLine;
@@ -71,6 +74,8 @@ signal mainMenu : tMenuFrame := (
 ( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- PXL GRID
 ( 00, 16, 24, 12, 00, 07, 18, 09, 04, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
+-- Method
+( 00, 13, 05, 20, 08, 15, 04, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- Smoothing
 ( 00, 19, 13, 15, 15, 20, 08, 09, 14, 07, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
 -- Color
@@ -105,7 +110,7 @@ signal colorMode_int : std_logic;
 -- 0: 60hz, 1: 59....
 signal framerate : std_logic;
 
-signal smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int : std_logic;
+signal smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int, gridMult_int : std_logic;
 signal controller_int, controller_prev : std_logic_vector( 5 downto 0 );
 signal lineSelected : integer range 0 to MENU_HEIGHTFIELDS - 1;
 signal lineActive : std_logic;
@@ -116,11 +121,12 @@ begin
   smooth4x <= smooth4x_int;
   pixelGrid <= pixelGrid_int;
   bgrid <= bgrid_int;
+  gridMult <= gridMult_int;
   colorMode <= colorMode_int;
   rate <= framerate;
   
   -- Update menu.
-  process( smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int, colorMode_int, framerate ) is
+  process( smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int, gridMult_int, colorMode_int, framerate ) is
   begin
     if ( smooth2x_int = '1' ) then
       -- 2X
@@ -166,6 +172,24 @@ begin
       mainMenu( PXLGRIDFIELDY )( PXLGRIDFIELDX + 3 ) <= 0;
       mainMenu( PXLGRIDFIELDY )( PXLGRIDFIELDX + 4 ) <= 0;
       mainMenu( PXLGRIDFIELDY )( PXLGRIDFIELDX + 5 ) <= 0;
+    end if;
+
+    if ( gridMult_int = '1' ) then
+      -- MULT
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX ) <= 13;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 1 ) <= 21;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 2 ) <= 12;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 3 ) <= 20;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 4 ) <= 0;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 5 ) <= 0;
+    else
+      -- ADD
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX ) <= 1;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 1 ) <= 4;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 2 ) <= 4;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 3 ) <= 0;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 4 ) <= 0;
+      mainMenu( GRIDMULTFIELDY )( GRIDMULTFIELDX + 5 ) <= 0;
     end if;
     
     if ( colorMode_int = '0' ) then
@@ -334,6 +358,7 @@ begin
         smooth2x_int <= '0';
         smooth4x_int <= '0';
         pixelGrid_int <= '0';
+        gridMult_int <= '0';
         bgrid_int <= '0';
         colorMode_int <= '0';
         framerate <= '0';
@@ -359,7 +384,7 @@ begin
           if ( controller_int( 4 ) = '1' and controller_prev( 4 ) = '0' ) then
             case lineSelected is
               -- Pxl grid
-              when 3 => 
+              when PXLGRIDFIELDY =>
                 smooth2x_int <= '0';
                 smooth4x_int <= '0';
                 if ( pixelGrid_int = '1' ) then
@@ -374,9 +399,12 @@ begin
                   pixelGrid_int <= '1';
                   bgrid_int <= '0';
                 end if;
+
+              when GRIDMULTFIELDY =>
+                gridMult_int <= not gridMult_int;
                 
               -- Smooth  
-              when 4 =>
+              when SMOOTHFIELDY =>
                 pixelGrid_int <= '0';
                 bgrid_int <= '0';
                 
@@ -398,19 +426,15 @@ begin
                 
                 
               -- Color  
-              when 5 =>                
+              when COLORFIELDY =>
                 colorMode_int <= not colorMode_int;
                 
               -- Framerate
-              when 6 =>
+              when FRAMEFIELDY =>
                 framerate <= not framerate;
               
+              -- Impossible
               when others =>
-                pixelGrid_int <= '0';
-                bgrid_int <= '0';
-                smooth4x_int <= '0';
-                smooth2x_int <= '0';
-                colorMode_int <= '0';
             end case;
           end if;
         end if;
