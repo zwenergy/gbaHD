@@ -189,6 +189,7 @@ module channel(
     upsampler up(
         .clk(clk),
         .rst(rst),
+        .max(max),
         .in(sample),
         .out(pcm)
     );
