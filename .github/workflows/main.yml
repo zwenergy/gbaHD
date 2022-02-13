@@ -32,7 +32,7 @@ jobs:
             bitstream:
             - 'bitstream/**'
       - name: get_bitstream_version
-        run: .github/get_bitstream_version.sh bitstreams/default_720p.bit
+        run: chmod +x .github/get_bitstream_version.sh && .github/get_bitstream_version.sh bitstreams/default_720p.bit
         shell: bash
       - uses: marvinpinto/action-automatic-releases@v1.2.1
         # uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0
