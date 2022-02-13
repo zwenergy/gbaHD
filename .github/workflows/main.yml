@@ -39,6 +39,7 @@ jobs:
         with:
           # GitHub secret token
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: latest
           # Release title (for automatic releases)
           title: ${{ env.BITSTREAM_VERSION }}
           # Assets to upload to the release
