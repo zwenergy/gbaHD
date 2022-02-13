@@ -42,8 +42,9 @@ jobs:
           automatic_release_tag: latest
           # Release title (for automatic releases)
           title: ${{ env.BITSTREAM_VERSION }}
+          prerelease: false
           # Assets to upload to the release
           files: |
-            bitstreams/*.bit
+            bitstream/*.bit
         #if: steps.changes.outputs.bitstream == 'true'
         
