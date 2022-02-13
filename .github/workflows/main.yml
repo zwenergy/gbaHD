@@ -40,7 +40,7 @@ jobs:
           # GitHub secret token
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           # Release title (for automatic releases)
-          title: "${{ BITSTREAM_VERSION }}"
+          title: ${{ env.BITSTREAM_VERSION }}
           # Assets to upload to the release
           files: |
             bitstreams/*.bit
