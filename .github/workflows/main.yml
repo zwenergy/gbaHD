@@ -44,5 +44,5 @@ jobs:
           # Assets to upload to the release
           files: |
             bitstreams/*.bit
-        if: steps.changes.outputs.bitstream == 'true'
+        #if: steps.changes.outputs.bitstream == 'true'
         
