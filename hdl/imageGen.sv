@@ -99,7 +99,7 @@ localparam int gbaVideoYStop = gbaVideoYStart + ( maxScaleCnt + 1 ) * 160;
 
 hdmi #( .VIDEO_ID_CODE(VIDEOID), 
         .DVI_OUTPUT(0), 
-        .VIDEO_REFRESH_RATE(60.0),
+        .VIDEO_REFRESH_RATE(VIDEO_REFRESH),
         .IT_CONTENT(1),
         .AUDIO_RATE(48000), 
         .AUDIO_BIT_WIDTH(AUDIO_BIT_WIDTH),
@@ -107,7 +107,7 @@ hdmi #( .VIDEO_ID_CODE(VIDEOID),
         .START_Y(gbaVideoYStart) )
 hdmi( .clk_pixel_x5(pxlClk5x), 
       .clk_pixel(pxlClk), 
-      .clk_audio(audioClk_gba), 
+      .clk_audio(audioClk_gba),
       .rgb(rgb), 
       .reset( rst || !enableHdmi ),
       .audio_sample_word('{pcmL, pcmR}),
@@ -159,6 +159,7 @@ assign rgb = { redPxl, greenPxl, bluePxl };
 assign curPxl = pxlCntRead;
 logic newFrameDel;
 
+
 always_ff @( posedge pxlClk )
 begin
   if ( rst )
@@ -202,7 +203,11 @@ begin
     // FIXME: magic constant 3 gets pixel transitions from lineCache to
     // coincide with desired HDMI output, would be good to derive from cycle
     // timings in a more principled way
+    `ifdef RES0_480P
+    if ( cx > ( gbaVideoXStop - 3 ) && cx < 856 )
+    `else
     if ( cx <= gbaVideoXStart - 3 || cx > gbaVideoXStop - 3 )
+    `endif
     begin
       pxlCntScale <= 3'(0);
       pxlCntRead <= 8'(0);

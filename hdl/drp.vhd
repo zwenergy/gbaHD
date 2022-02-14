@@ -9,11 +9,13 @@ use IEEE.numeric_std.all;
 
 entity drp is
   port (
-    -- 00: 60 Hz, 720p
-    -- 01: 59.x Hz, 720p
-    -- 10: 60 Hz, 1080p
-    -- 11: 59.x Hz, 1080p
-    stateSel : in std_logic_vector( 1 downto 0 );
+    -- 000: 60 Hz, 720p
+    -- 001: 59.x Hz, 720p
+    -- 010: 60 Hz, 1080p
+    -- 011: 59.x Hz, 1080p
+    -- 100: 60 Hz, 480p
+    -- 101: 59.x Hz, 480p
+    stateSel : in std_logic_vector( 2 downto 0 );
     doSwitch : in std_logic;
     
     doSig : in std_logic_vector( 15 downto 0 );
@@ -41,7 +43,7 @@ type reconfEntry_t is record
   mask :  std_logic_vector( 15 downto 0 );
 end record reconfEntry_t;
 type reconfSetting_t is array( 0 to 13 ) of reconfEntry_t;
-type reconfROM_t is array( 0 to 3 ) of reconfSetting_t;
+type reconfROM_t is array( 0 to 5 ) of reconfSetting_t;
 
 -- The actual ROM.
 constant reconfROM : reconfROM_t :=
@@ -411,6 +413,190 @@ constant reconfROM : reconfROM_t :=
       data => std_logic_vector( to_unsigned( 16#0080#, 16 ) ),
       mask => "1111110000000000"
     )
+  ),
+  
+  -- 60 Hz, 480p
+  4 =>
+  -- General settings
+  ( 0 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#14#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#15d7#, 16 ) ),
+      mask => "0001000000000000"
+    ),
+    
+    1 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#15#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#2800#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    2 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#13#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#2800#, 16 ) ),
+      mask => "1100001100000000"
+    ),
+    3 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#16#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#0083#, 16 ) ),
+      mask => "1100000000000000"
+    ),
+    4 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#4F#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#0100#, 16 ) ),
+      mask => "0110011001101111"
+    ),
+    5 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#4E#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#1900#, 16 ) ),
+      mask => "0110011011111111"
+    ),
+    6 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#28#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#FFFF#, 16 ) ),
+      mask => "0000000000000000"
+    ),
+    7 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#18#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#00fa#, 16 ) ),
+      mask => "1111110000000000"
+    ),
+    8 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#19#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#7c01#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    9 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#1A#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#7de9#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    -- Clkout0
+    10 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#08#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#10c4#, 16 ) ),
+      mask => "0001000000000000"
+    ),
+    11 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#09#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#0080#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    -- Clkout1
+    12 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#0A#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#1452#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    13 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#0B#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#0080#, 16 ) ),
+      mask => "1111110000000000"
+    )
+  ),
+  
+--  -- 59.x Hz, 480p
+  5 =>
+  -- General settings
+  ( 0 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#14#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#175d#, 16 ) ),
+      mask => "0001000000000000"
+    ),
+    
+    1 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#15#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#4c00#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    2 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#13#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#1400#, 16 ) ),
+      mask => "1100001100000000"
+    ),
+    3 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#16#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#0105#, 16 ) ),
+      mask => "1100000000000000"
+    ),
+    4 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#4F#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#1000#, 16 ) ),
+      mask => "0110011001101111"
+    ),
+    5 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#4E#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#0800#, 16 ) ),
+      mask => "0110011011111111"
+    ),
+    6 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#28#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#FFFF#, 16 ) ),
+      mask => "0000000000000000"
+    ),
+    7 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#18#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#00fa#, 16 ) ),
+      mask => "1111110000000000"
+    ),
+    8 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#19#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#7c01#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    9 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#1A#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#7de9#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    -- Clkout0
+    10 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#08#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#1083#, 16 ) ),
+      mask => "0001000000000000"
+    ),
+    11 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#09#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#0080#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    -- Clkout1
+    12 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#0A#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#130d#, 16 ) ),
+      mask => "1000000000000000"
+    ),
+    13 =>
+    (
+      addr => std_logic_vector( to_unsigned( 16#0B#, 7 ) ),
+      data => std_logic_vector( to_unsigned( 16#0080#, 16 ) ),
+      mask => "1111110000000000"
+    )
   )
 );
 
@@ -428,7 +614,7 @@ signal itemInd : integer range 0 to 13;
 
 signal maskedVal : std_logic_vector( 15 downto 0 );
 
-signal stateSel_int : std_logic_vector( 1 downto 0 );
+signal stateSel_int : std_logic_vector( 2 downto 0 );
 begin
 
   dclk <= clk;

@@ -41,7 +41,7 @@ wire framerate, drdy, locked, busy, dwe, den, dclkDRP, rstMMCM, busyDRP;
 wire [15:0] doSig, diSig;
 wire [6:0] daddr;
 logic doSwitch;
-logic [1:0] stateSel;
+logic [2:0] stateSel;
 
 // Generate clocks.
 wire pxlClk, pxlClkInt, pxlClkx5, pxlClkx5Int, gbaClkx2, gbaClkx2Int, 
@@ -140,15 +140,19 @@ begin
       doSwitch <= 1;
       if ( framerateCDC2 == 0 ) begin
       `ifdef RES0_720P
-        stateSel <= 2'b00;
+        stateSel <= 3'b000;
+      `elsif RES_1080P
+        stateSel <= 3'b010;
       `else
-        stateSel <= 2'b10;
+        stateSel <= 3'b100;
       `endif
       end else begin
       `ifdef RES0_720P
-        stateSel <= 2'b01;
+        stateSel <= 3'b001;
+      `elsif RES_1080P
+        stateSel <= 3'b011;
       `else
-        stateSel <= 2'b11;
+        stateSel <= 3'b101;
       `endif
       end
     end else begin
