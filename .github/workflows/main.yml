@@ -24,7 +24,7 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      
+
       - uses: dorny/paths-filter@v2
         id: changes
         with:
@@ -33,6 +33,12 @@ jobs:
             - 'bitstream/**'
       - name: get_bitstream_version
         run: chmod +x .github/get_bitstream_version.sh && .github/get_bitstream_version.sh bitstream/default_720p.bit
+        shell: bash
+      - name: get_spiffs_script
+        run: curl https://raw.githubusercontent.com/espressif/esp-idf/master/components/spiffs/spiffsgen.py -o ./spiffsgen.py
+        shell: bash
+      - name: package_spiffs_image
+        run: for file in bitstream/*; do mkdir $(basename $file); cp $file $(basename $file)/bitstream.bit; python spiffsgen.py 0xF0000 $(basename $file)/ $(basename $file)_blueretro.bin; done
         shell: bash
       - uses: marvinpinto/action-automatic-releases@v1.2.1
         # uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0
@@ -46,5 +52,5 @@ jobs:
           # Assets to upload to the release
           files: |
             bitstream/*.bit
+            *.bin
         if: steps.changes.outputs.bitstream == 'true'
-        
