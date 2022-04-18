@@ -10,7 +10,7 @@ package definePackage;
   
   `ifdef RES0_480P
   localparam pxlClkFrq_60hz = 27000.0;
-  localparam pxlClkFrq_59hz = 26888.888889;
+  localparam pxlClkFrq_59hz = pxlClkFrq_60hz*(1000.0/1004.4027); // 59.737 Hz
   localparam widthMax = 858;
   localparam heightMax = 525;
   localparam FRAMEWIDTH = 720;
@@ -30,7 +30,7 @@ package definePackage;
   
   `ifdef RES0_720P
   localparam pxlClkFrq_60hz = 74250.0;
-  localparam pxlClkFrq_59hz = 73878.750;
+  localparam pxlClkFrq_59hz = pxlClkFrq_60hz*(1000.0/1004.4027); // 59.737 Hz
   localparam widthMax = 1650;
   localparam heightMax = 750;
   localparam FRAMEWIDTH = 1280;
@@ -50,7 +50,7 @@ package definePackage;
   
   `ifdef RES0_1080P
   localparam pxlClkFrq_60hz = 148500.0;
-  localparam pxlClkFrq_59hz = 147812.5;
+  localparam pxlClkFrq_59hz = pxlClkFrq_60hz*(1000.0/1004.4027); // 59.737 Hz
   localparam widthMax = 2200;
   localparam heightMax = 1125;
   localparam FRAMEWIDTH = 1920;
