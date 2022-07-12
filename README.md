@@ -1,5 +1,5 @@
 # gbaHD
-A GBA to DVI converter.
+An open-source GBA consolizer.
 
 To create a stable video signal without buffering whole frames, but rather
 go line-by-line, the quartz crystal of the GBA is removed. Instead, 
