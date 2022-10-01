@@ -151,4 +151,4 @@ create_clock -period 10.000 -name clk -waveform {0.000 5.000} [get_ports clk]
 set_false_path -from [get_clocks pxlClkInt] -to [get_clocks clk]
 
 # Set USR_ACCESS register.
-set_property BITSTREAM.CONFIG.USR_ACCESS 0x312E3348 [current_design]
+set_property BITSTREAM.CONFIG.USR_ACCESS 0x312E3349 [current_design]
