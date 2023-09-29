@@ -237,7 +237,7 @@ lineBuffer( .clkW( pxlClk ),
 // Line cache.
 wire [7:0] pxlCntReadToCache;
 logic cacheUpdate;
-lineCache( .clk( pxlClk ),
+lineCache lineCache( .clk( pxlClk ),
            .rst( rst ),
            .curPxlCnt( pxlCntReadToCache ),
            .lineChange( cacheUpdate ),
@@ -285,7 +285,7 @@ lineCache( .clk( pxlClk ),
 
 
 // Image generation.
-imageGenV ( .pxlClk( pxlClk ),
+imageGenV imageGenV ( .pxlClk( pxlClk ),
             .pxlClk5x( pxlClkx5 ),
             .rst( rst ),
              
