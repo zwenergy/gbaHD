@@ -9,7 +9,6 @@ use IEEE.numeric_std.ALL;
 
 entity osd is
   generic(
-    smoothEnable : integer;
     scale : integer;
     frameWidth : integer;
     frameHeight : integer
@@ -17,31 +16,44 @@ entity osd is
   port(
     pxlX : in integer range 0 to 1665;
     pxlY : in integer range -25 to 1000;
-    controller : in std_logic_vector( 5 downto 0 );
     osdEnableIn : in std_logic;
-    rxValid : in std_logic;
     clk : in std_logic;
     rst : in std_logic;
     
-    osdEnableOut : out std_logic;
     osdRed : out std_logic_vector( 7 downto 0 );
     osdGreen : out std_logic_vector( 7 downto 0 );
     osdBlue : out std_logic_vector( 7 downto 0 );
     
-    smooth2x : out std_logic;
-    smooth4x : out std_logic;
-    pixelGrid : out std_logic;
-    bgrid : out std_logic;
-    gridMult : out std_logic;
-    colorMode : out std_logic;
-    rate : out std_logic
+    smooth2xIn : in std_logic;
+    smooth4xIn : in std_logic;
+    pixelGridIn : in std_logic;
+    bgridIn : in std_logic;
+    gridMultIn : in std_logic;
+    colorModeIn : in std_logic;
+    rateIn : in std_logic;
+    controllerOSDActive : in std_logic;
+    
+    osdEnableOut : out std_logic;
+    smooth2xOut : out std_logic;
+    smooth4xOut : out std_logic;
+    pixelGridOut : out std_logic;
+    bgridOut : out std_logic;
+    gridMultOut : out std_logic;
+    colorModeOut : out std_logic;
+    rateOut : out std_logic;
+    
+    osdState : in std_logic_vector( 7 downto 0 );
+    
+    configValid : in std_logic;
+    stateValid : in std_logic;
+    rxValid : in std_logic
   );
 end entity;
 
 architecture rtl of osd is
 -- Assuming the resolution is 1280x720
 constant MENU_WIDTHFIELDS : integer := 27;
-constant MENU_HEIGHTFIELDS : integer := 9;
+constant MENU_HEIGHTFIELDS : integer := 12;
 constant CHARWIDTH : integer := 5;
 constant CHARHEIGHT : integer := 7;
 constant CHARSPACE : integer := 1;
@@ -61,33 +73,44 @@ constant COLORFIELDX : integer := 15;
 constant COLORFIELDY : integer := SMOOTHFIELDY + 1;
 constant FRAMEFIELDX : integer := 15;
 constant FRAMEFIELDY : integer := COLORFIELDY + 1;
+constant PADDISPFIELDX : integer := 15;
+constant PADDISPFIELDY : integer := FRAMEFIELDY + 1;
 
-type tLine  is array( 0 to MENU_WIDTHFIELDS - 1 ) of integer range 0 to 37;
+type tLine  is array( 0 to MENU_WIDTHFIELDS - 1 ) of integer range 0 to 43;
 type tMenuFrame is array( 0 to MENU_HEIGHTFIELDS - 1 ) of tLine;
 
+attribute ram_style : string;
 signal mainMenu : tMenuFrame := (
 -- One empty line
-( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
--- GBAHD v1.3J
-( 00, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 22, 27, 36, 29, 10, 00, 00, 00, 00, 00, 00, 00, 00 ),
+( 39, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 40 ),
+-- GBAHD v1.4A
+( 41, 00, 00, 00, 00, 00, 00, 00, 07, 02, 01, 08, 04, 00, 27, 36, 30, 01, 00, 00, 00, 00, 00, 00, 00, 00, 41 ),
 -- One empty line
-( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
+( 37, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 38 ),
 -- PXL GRID
-( 00, 16, 24, 12, 00, 07, 18, 09, 04, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
+( 41, 00, 16, 24, 12, 00, 07, 18, 09, 04, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 41 ),
 -- Method
-( 00, 13, 05, 20, 08, 15, 04, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
+( 41, 00, 13, 05, 20, 08, 15, 04, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 41 ),
 -- Smoothing
-( 00, 19, 13, 15, 15, 20, 08, 09, 14, 07, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
+( 41, 00, 19, 13, 15, 15, 20, 08, 09, 14, 07, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 41 ),
 -- Color
-( 00, 03, 15, 12, 15, 18, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
+( 41, 00, 03, 15, 12, 15, 18, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 41 ),
 -- Framerate
-( 00, 06, 18, 01, 13, 05, 18, 01, 20, 05, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ),
+( 41, 00, 06, 18, 01, 13, 05, 18, 01, 20, 05, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 41 ),
+-- Pad display
+( 41, 00, 16, 01, 04, 00, 04, 09, 19, 16, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 41 ),
 -- One empty line
-( 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 )
+( 41, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 41 ),
+-- START: SAVE | B: REVERT
+( 41, 00, 19, 20, 01, 18, 20, 42, 00, 19, 01, 22, 05, 00, 41, 00, 02, 42, 00, 01, 02, 15, 18, 20, 00, 00, 41 ),
+-- Bottom Line
+( 40, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 43, 39 )
 );
 
+-- Have to add this attribute to NOT use RAM (since all is used for the line buffer)
+attribute ram_style of mainMenu : signal is "registers";
 
-signal osdEnable_int : std_logic;
+
 signal fieldYCnt : integer range 0 to MENU_HEIGHTFIELDS - 1;
 signal fieldXCnt : integer range 0 to MENU_WIDTHFIELDS - 1;
 signal pxlXCnt : integer range 0 to FIELDWIDTH - 1;
@@ -97,7 +120,10 @@ signal menuArea : std_logic;
 signal curSpace : std_logic;
 signal nextOSDShow : std_logic;
 
-signal char : integer range 0 to 37;
+signal char, char_reg : integer range 0 to 37;
+-- Have to add this attribute to NOT use RAM (since all is used for the line buffer)
+attribute ram_style of char_reg : signal is "registers";
+
 signal charX : integer range 0 to 4;
 signal charY: integer range 0 to 6;
 signal charPxl : std_logic;
@@ -111,22 +137,22 @@ signal colorMode_int : std_logic;
 signal framerate : std_logic;
 
 signal smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int, gridMult_int : std_logic;
-signal controller_int, controller_prev : std_logic_vector( 5 downto 0 );
+
 signal lineSelected : integer range 0 to MENU_HEIGHTFIELDS - 1;
-signal lineActive : std_logic;
+signal lineActive, osdEnable_int : std_logic;
 
 begin
 
-  smooth2x <= smooth2x_int;
-  smooth4x <= smooth4x_int;
-  pixelGrid <= pixelGrid_int;
-  bgrid <= bgrid_int;
-  gridMult <= gridMult_int;
-  colorMode <= colorMode_int;
-  rate <= framerate;
+  smooth2xOut <= smooth2x_int;
+  smooth4xOut <= smooth4x_int;
+  pixelGridOut <= pixelGrid_int;
+  bgridOut <= bgrid_int;
+  gridMultOut <= gridMult_int;
+  colorModeOut <= colorMode_int;
+  rateOut <= framerate;
   
   -- Update menu.
-  process( smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int, gridMult_int, colorMode_int, framerate ) is
+  process( smooth2x_int, smooth4x_int, pixelGrid_int, bgrid_int, gridMult_int, colorMode_int, framerate, controllerOSDActive ) is
   begin
     if ( smooth2x_int = '1' ) then
       -- 2X
@@ -227,6 +253,23 @@ begin
       mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 4 ) <= 8;
       mainMenu( FRAMEFIELDY )( FRAMEFIELDX + 5 ) <= 26;
     end if;
+    
+    -- Input display
+    if ( controllerOSDActive = '0' ) then
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX ) <= 15;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 1 ) <= 6;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 2 ) <= 6;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 3 ) <= 0;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 4 ) <= 0;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 5 ) <= 0;
+    else
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX ) <= 15;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 1 ) <= 14;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 2 ) <= 0;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 3 ) <= 0;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 4 ) <= 0;
+      mainMenu( PADDISPFIELDY )( PADDISPFIELDX + 5 ) <= 0;
+    end if;
   end process;
   
   menuArea <= '1' when ( pxlX >= MENUSTARTX and pxlX < MENUENDX and
@@ -263,18 +306,40 @@ begin
         nextOSDShow <= '0';
         scaleCntX <= 0;
         scaleCntY <= 0;
-        controller_int <= ( others => '0' );
-        controller_prev <= ( others => '0' );
+        
+        smooth2x_int <= '0';
+        smooth4x_int <= '0';
+        pixelGrid_int <= '0';
+        gridMult_int <= '0';
+        bgrid_int <= '0';
+        colorMode_int <= '0';
+        framerate <= '0';
+        lineSelected <= 3;
+        
+        char_reg <= 0;
+
       else
       
         nextOSDShow <= menuArea and osdEnable_int;
+        char_reg <= char;
       
         if ( rxValid = '1' ) then
-          osdEnable_int <= osdEnableIn;
-          controller_int <= controller;
+          if ( stateValid = '1' ) then
+            osdEnable_int <= osdEnableIn;
+            lineSelected <= to_integer( unsigned( osdState ) );
+            
+          elsif ( configValid = '1' ) then
+            smooth2x_int <= smooth2xIn;
+            smooth4x_int <= smooth4xIn;
+            pixelGrid_int <= pixelGridIn;
+            bgrid_int <= bgridIn;
+            gridMult_int <= gridMultIn;
+            colorMode_int <= colorModeIn;
+            framerate <= rateIn;
+          
+          end if;
+          
         end if;
-        
-        controller_prev <= controller_int;
         
         -- Zero everything.
         if ( pxlX = 0 and pxlY = 0 ) then
@@ -346,98 +411,6 @@ begin
           osdBlue <= ( others => ( charPxl ) );
         end if;
         
-      end if;
-    end if;
-  end process;
-  
-  -- Controller handling
-  process( clk ) is
-  begin
-    if ( rising_edge( clk ) ) then
-      if ( rst = '1' ) then
-        smooth2x_int <= '0';
-        smooth4x_int <= '0';
-        pixelGrid_int <= '0';
-        gridMult_int <= '0';
-        bgrid_int <= '0';
-        colorMode_int <= '0';
-        framerate <= '0';
-        lineSelected <= 3;
-      else
-      
-        if ( osdEnable_int = '1' ) then
-          -- Up
-          if ( controller_int( 0 ) = '1' and controller_prev( 0 ) = '0' ) then
-            if ( lineSelected > 3 ) then
-              lineSelected <= lineSelected - 1;
-            end if;
-          end if;
-          
-          -- Down
-          if ( controller_int( 1 ) = '1' and controller_prev( 1 ) = '0' ) then
-            if ( lineSelected < FRAMEFIELDY ) then
-              lineSelected <= lineSelected + 1;
-            end if;
-          end if;
-          
-          -- A
-          if ( controller_int( 4 ) = '1' and controller_prev( 4 ) = '0' ) then
-            case lineSelected is
-              -- Pxl grid
-              when PXLGRIDFIELDY =>
-                smooth2x_int <= '0';
-                smooth4x_int <= '0';
-                if ( pixelGrid_int = '1' ) then
-                  if ( bgrid_int = '1' ) then
-                    pixelGrid_int <= '0';
-                    bgrid_int <= '0';
-                  else
-                    pixelGrid_int <= '1';
-                    bgrid_int <= '1';
-                  end if;
-                else
-                  pixelGrid_int <= '1';
-                  bgrid_int <= '0';
-                end if;
-
-              when GRIDMULTFIELDY =>
-                gridMult_int <= not gridMult_int;
-                
-              -- Smooth  
-              when SMOOTHFIELDY =>
-                pixelGrid_int <= '0';
-                bgrid_int <= '0';
-                
-                if ( smoothEnable = 1 ) then
-                  if ( smooth2x_int = '1' ) then
-                    smooth2x_int <= '0';
-                    smooth4x_int <= '1';
-                  elsif ( smooth4x_int = '1' ) then
-                    smooth2x_int <= '0';
-                    smooth4x_int <= '0';
-                  else
-                    smooth2x_int <= '1';
-                    smooth4x_int <= '0';
-                  end if;
-                else
-                  smooth2x_int <= '0';
-                  smooth4x_int <= '0';
-                end if;
-                
-                
-              -- Color  
-              when COLORFIELDY =>
-                colorMode_int <= not colorMode_int;
-                
-              -- Framerate
-              when FRAMEFIELDY =>
-                framerate <= not framerate;
-              
-              -- Impossible
-              when others =>
-            end case;
-          end if;
-        end if;
       end if;
     end if;
   end process;

@@ -45,8 +45,20 @@ module imageGenV
   input logic audioRIn,
   
   input logic osdEnable,
-  input logic controllerRXValid,
-  input logic [5:0] controller,
+  input logic rxValid,
+  input logic [9:0] controller,
+  input logic controllerOSDActive,
+  
+  input logic [7:0] osdState,
+  input logic osdStateValid,
+  input logic osdSmooth2x,
+  input logic osdSmooth4x,
+  input logic osdGridActive,
+  input logic osdGridBright,
+  input logic osdGridMult,
+  input logic osdColorCorrection_in,
+  input logic osdRate_in,
+  input logic osdSettingsValid,
   
   output logic colorMode,
   output logic framerate,
@@ -238,6 +250,9 @@ begin
 end
 
 // Choose which signal outlet.
+logic overlayInact;
+logic overlayAct;
+
 always_comb
 begin
   if( drawOSD ) begin
@@ -251,7 +266,7 @@ begin
       greenPxl <= gridGreen;
       bluePxl <= gridBlue;
       
-    end else if ( smooth2x || smooth4x ) begin
+    end else if ( ( smooth2x || smooth4x ) && SMOOTHENABLE ) begin
       redPxl <= smoothRed;
       greenPxl <= smoothGreen;
       bluePxl <= smoothBlue;
@@ -266,6 +281,20 @@ begin
     redPxl <= borderRed;
     greenPxl <= borderGreen;
     bluePxl <= borderBlue;
+  end
+  
+  if ( controllerOSDActive ) begin
+    if ( overlayInact ) begin
+      redPxl <= 8'b11111111;
+      greenPxl <= 8'b11111111;
+      bluePxl <= 8'b11111111;
+    end
+
+    if ( overlayAct ) begin
+      redPxl <= 8'b11111111;
+      greenPxl <= 0;
+      bluePxl <= 0;
+    end
   end
 end
 
@@ -330,28 +359,56 @@ smooth4x ( .rTL( prevLinePrevPxlRedIn ),
            
            
 // OSD.
-osd #( .smoothEnable( SMOOTHENABLE ),
-       .scale( maxScaleCnt + 1 ),
+osd #( .scale( maxScaleCnt + 1 ),
        .frameWidth( FRAMEWIDTH ),
        .frameHeight( FRAMEHEIGHT ) ) 
 osd ( .pxlX( cx ),
       .pxlY( cy ),
-      .controller( controller ),
+//      .controller( controller ),
       .osdEnableIn( osdEnable ),
-      .rxValid( controllerRXValid ),
+      .rxValid( rxValid ),
       .clk( pxlClk ),
       .rst( rst ),
       .osdEnableOut( drawOSD ),
       .osdRed( osdRed ),
       .osdGreen( osdGreen ),
       .osdBlue( osdBlue ),
-      .smooth2x( smooth2x ),
-      .smooth4x( smooth4x ),
-      .pixelGrid( pxlGrid ),
-      .bgrid( brightGrid ),
-      .gridMult( gridMult ),
-      .colorMode( colorMode ),
-      .rate( framerate ) );
+      
+      .smooth2xIn( osdSmooth2x ),
+      .smooth4xIn( osdSmooth4x ),
+      .pixelGridIn( osdGridActive ),
+      .bgridIn( osdGridBright ),
+      .gridMultIn( osdGridMult ),
+      .colorModeIn( osdColorCorrection_in ),
+      .rateIn( osdRate_in ),
+      .controllerOSDActive( controllerOSDActive ),
+      
+      .smooth2xOut( smooth2x ),
+      .smooth4xOut( smooth4x ),
+      .pixelGridOut( pxlGrid ),
+      .bgridOut( brightGrid ),
+      .gridMultOut( gridMult ),
+      .colorModeOut( colorMode ),
+      .rateOut( framerate ),
+      
+      .osdState( osdState ),
+      .configValid( osdSettingsValid ),
+      .stateValid( osdStateValid )
+      );
+      
+// Pad overlay.
+padOverlay #( .posX( 10 ),
+              .posY( 10 ),
+              .scale( maxScaleCnt + 1 ),
+              .frameWidth( FRAMEWIDTH ),
+              .frameHeight( FRAMEHEIGHT ) )
+padOverlay ( .pxlX( cx ),
+             .pxlY( cy ),
+             .buttons( controller ),
+             .clk( pxlClk ),
+             .rst( rst ),
+             .overlayInact( overlayInact ),
+             .overlayAct( overlayAct ) );
 
       
 // Border gen.

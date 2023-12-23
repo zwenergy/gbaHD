@@ -5,6 +5,11 @@ To create a stable video signal without buffering whole frames, but rather
 go line-by-line, the quartz crystal of the GBA is removed. Instead, 
 the FPGA generates the clock signal for the GBA.
 
+## Note
+The latest bitstream (v1.4A) only works in conjunction with a Mancloud
+shield. I will update the Arduino FW in the upcoming days, so the latest 
+bitstream can be used with all gbaHD.
+
 ## Wiring
 You need some basic soldering skills to wire all signals of the GBA to the
 FPGA board and the controller to the Arduino. All responsibility is on

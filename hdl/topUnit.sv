@@ -206,8 +206,6 @@ logic [7:0] curLineCurPxlRed, curLineCurPxlBlue, curLineCurPxlGreen,
   nextLinePrevPxlRed, nextLinePrevPxlBlue, nextLinePrevPxlGreen,
   nextLineNextPxlRed, nextLineNextPxlBlue, nextLineNextPxlGreen;
   
-logic [5:0] controller;
-logic controllerRXValid;
 
 lineBuffer #( .nrStgs(20) ) 
 lineBuffer( .clkW( pxlClk ), 
@@ -285,6 +283,12 @@ lineCache( .clk( pxlClk ),
 
 
 // Image generation.
+logic osdEnable, osdSmooth2x, osdSmooth4x, osdGridActive, osdGridBright,
+  osdGridMult, osdColorCorrection, osdRate, osdSettingsValid, rxValid, 
+  osdStateValid, controllerOSDActive;
+logic [9:0] controller;
+logic [7:0] osdState;
+
 imageGenV ( .pxlClk( pxlClk ),
             .pxlClk5x( pxlClkx5 ),
             .rst( rst ),
@@ -324,12 +328,25 @@ imageGenV ( .pxlClk( pxlClk ),
             .audioLIn( audioLIn ),
             .audioRIn( audioRIn ),
             
-            .controllerRXValid( controllerRXValid ),
+            .osdEnable( osdEnable ),
+            .rxValid( rxValid ),
             .controller( controller ),
+            .controllerOSDActive( controllerOSDActive ),
+            
+            .osdState( osdState ),
+            .osdStateValid( osdStateValid ),
+            .osdSmooth2x( osdSmooth2x ),
+            .osdSmooth4x( osdSmooth4x ),
+            .osdGridActive( osdGridActive ),
+            .osdGridBright( osdGridBright ),
+            .osdGridMult( osdGridMult ),
+            .osdColorCorrection_in( osdColorCorrection ),
+            .osdRate_in( osdRate ),
+            .osdSettingsValid( osdSettingsValid ),
+            
             .colorMode( colorMode ),
             .framerate( framerate ),
-            .osdEnable( osdEnable ),
-            
+
             .nextLine( pullLineBuff ),
             .cacheUpdate( cacheUpdate ),
             .curPxl( pxlCntReadToCache ),
@@ -338,7 +355,7 @@ imageGenV ( .pxlClk( pxlClk ),
             
 
 // Controller communication.
-commTransceiver #( .packetBits( 8 ),
+commTransceiver #( .packetBits( 16 ),
                    .clkFreq0( pxlClkFrq_60hz ),
                    .clkFreq1( pxlClkFrq_59hz ),
                    .clkFreqMax( pxlClkFrq_60hz ),
@@ -349,8 +366,19 @@ commTransceiver ( .serDatIn( controllerMCUIn ),
                   //.clkFreq( framerate ),
                   .clkFreq( 0 ),
                   .controllerOut( controller ),
+                  .controllerOSDActive( controllerOSDActive ),
                   .osdActive( osdEnable ),
-                  .rxValid( controllerRXValid ) );
+                  .osdState( osdState ),
+                  .osdStateValid( osdStateValid ),
+                  .osdSmooth2x( osdSmooth2x ),
+                  .osdSmooth4x( osdSmooth4x ),
+                  .osdGridActive( osdGridActive ),
+                  .osdGridBright( osdGridBright ),
+                  .osdGridMult( osdGridMult ),
+                  .osdColorCorrection( osdColorCorrection ),
+                  .osdRate( osdRate ),
+                  .osdSettingsValid( osdSettingsValid ),
+                  .rxValid( rxValid ) );
 
 // Output diff. signals.
 genvar i;

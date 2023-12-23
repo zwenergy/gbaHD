@@ -11,7 +11,7 @@ use IEEE.std_logic_misc.ALL;
 
 entity commTransceiver is
   generic( 
-    packetBits : integer := 8;
+    packetBits : integer := 16;
     clkFreq0 : real; -- kHz
     clkFreq1 : real; -- kHz
     clkFreqMax : real; -- kHz
@@ -27,8 +27,23 @@ entity commTransceiver is
     
     --serDatOut : out std_logic;
     --txActive : out std_logic;
-    controllerOut : out std_logic_vector( 5 downto 0 );
+    controllerOut : out std_logic_vector( 9 downto 0 );
+    controllerOSDActive : out std_logic;
+    
     osdActive : out std_logic;
+    osdState : out std_logic_vector( 7 downto 0 );
+    osdStateValid : out std_logic;
+    
+    -- Settings
+    osdSmooth2x : out std_logic;
+    osdSmooth4x : out std_logic;
+    osdGridActive : out std_logic;
+    osdGridBright : out std_logic;
+    osdGridMult : out std_logic;
+    osdColorCorrection : out std_logic;
+    osdRate : out std_logic;
+    osdSettingsValid : out std_logic;
+    
     rxValid : out std_logic
     );
     
@@ -43,6 +58,11 @@ architecture rtl of commTransceiver is
   constant cyclesHalfBit0 : integer := cyclesBit0 / 2;
   constant cyclesHalfBit1 : integer := cyclesBit1 / 2;
   
+  constant prefixLen : integer := 4;
+  constant controllerOSD_prefix : std_logic_vector( prefixLen - 1 downto 0 ) := "1000";
+  constant config_prefix : std_logic_vector( prefixLen - 1 downto 0 ) := "0100";
+  constant osdState_prefix : std_logic_vector( prefixLen - 1 downto 0 ) := "0010";
+  
   -- Timeout counter.
   signal timeoutCnt : integer range 0 to cyclesTimeout;
   -- Bit counter.
@@ -54,14 +74,11 @@ architecture rtl of commTransceiver is
 
   signal serDatInPrev, serDatIn_filtered : std_logic;
   signal serDatFilter : std_logic_vector( 7 downto 0 );
-  signal osdActive_int : std_logic;
-  
+    
   -- A few status bits.
   signal rxPacket : std_logic;
   
 begin
-
-  osdActive <= osdActive_int;
                        
   
   -- Synch. part.
@@ -75,10 +92,24 @@ begin
         newPacket <= '0';
         serDatInPrev <= '0';
         rxPacket <= '0';
-        osdActive_int <= '0';
         controllerOut <= ( others => '0' );
         rxValid <= '0';
         serDatFilter <= ( others => '1' );
+        
+        controllerOut <= ( others => '0' );
+        controllerOSDActive <= '0';
+        osdActive <= '0';
+        osdState <= ( others => '0' );
+        osdStateValid <= '0';
+        osdSmooth2x <= '0';
+        osdSmooth4x <= '0';
+        osdGridActive <= '0';
+        osdGridBright <= '0';
+        osdGridMult <= '0';
+        osdColorCorrection <= '0';
+        osdRate <= '0';
+        osdSettingsValid <= '0';
+        
         serDatIn_filtered <= '1';
         --serDatOut <= '1';
         --txActive <= '0';
@@ -127,17 +158,38 @@ begin
         
         -- Controller output related stuff.
         if ( newPacket = '1' ) then
-          controllerOut <= curPacket( packetBits - 1 downto packetBits - 6 );
-          
-          if ( curPacket( packetBits - 7 ) = '1' ) then
-            osdActive_int <= '1';
-          else
-            osdActive_int <= '0';
+        
+          -- On screen buttons?
+          if ( curPacket( packetBits - 1 downto packetBits - prefixLen ) = controllerOSD_prefix ) then
+            controllerOut <= curPacket( 9 downto 0 );
+            
+          -- Settings packet?
+          elsif ( curPacket( packetBits - 1 downto packetBits - prefixLen ) = config_prefix ) then
+            osdSmooth2x <= curPacket( 0 );
+            osdSmooth4x <= curPacket( 1 );
+            osdGridActive <= curPacket( 2 );
+            osdGridBright <= curPacket( 3 );
+            osdGridMult <= curPacket( 4 );
+            osdColorCorrection <= curPacket( 5 );
+            osdRate <= curPacket( 6 );
+            controllerOSDActive <= curPacket( 7 );
+            osdSettingsValid <= '1';
+            
+          -- OSD state?
+          elsif ( curPacket( packetBits - 1 downto packetBits - prefixLen ) = osdState_prefix ) then
+            osdActive <= curPacket( 0 );
+            osdState( 6 downto 0 ) <= curPacket( 7 downto 1 );
+            osdState( 7 ) <= '0';
+            osdStateValid <= '1';
+    
           end if;
  
           rxValid <= '1';
         else 
           rxValid <= '0';
+          osdSettingsValid <= '0';
+          osdStateValid <= '0';
+          
         end if;
 
       end if;
