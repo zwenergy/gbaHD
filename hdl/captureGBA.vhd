@@ -98,7 +98,7 @@ begin
   end process;
   
   -- GBA color correction.
-  colorCorrection : entity work.gbaColorCorr( rtl )
+  colorCorrection : entity work.gbaColorCorrNew( rtl )
     port map(
       gbaRed => curRedPxl,
       gbaGreen => curGreenPxl,
